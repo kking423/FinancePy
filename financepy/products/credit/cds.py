@@ -147,9 +147,9 @@ def _protection_leg_pv_numba(teff,
     prot_pv = 0.0
     small = 1e-8
 
-    if useFlatHazardRateIntegral is True:
+    for _ in range(num_steps_per_year):
+        if useFlatHazardRateIntegral is True:
 
-        for _ in range(0, num_steps_per_year):
             t = t + dt
             z2 = _uinterpolate(t, npIborTimes, npIborValues, method)
             q2 = _uinterpolate(t, npSurvTimes, npSurvValues, method)
@@ -159,23 +159,18 @@ def _protection_leg_pv_numba(teff,
             expTerm = exp(-(r12 + h12) * dt)
             dprot_pv = h12 * (1.0 - expTerm) * q1 * z1 / \
                 (abs(h12 + r12) + small)
-            prot_pv += dprot_pv
-            q1 = q2
-            z1 = z2
+        else:
 
-    else:
-
-        for _ in range(0, num_steps_per_year):
             t += dt
             z2 = _uinterpolate(t, npIborTimes, npIborValues, method)
             q2 = _uinterpolate(t, npSurvTimes, npSurvValues, method)
             dq = q1 - q2
             dprot_pv = 0.5 * (z1 + z2) * dq
-            prot_pv += dprot_pv
-            q1 = q2
-            z1 = z2
+        prot_pv += dprot_pv
+        q1 = q2
+        z1 = z2
 
-    prot_pv = prot_pv * (1.0 - contract_recovery_rate)
+    prot_pv *= 1.0 - contract_recovery_rate
     return prot_pv
 
 
@@ -258,12 +253,12 @@ class CDS:
             flow_num += 1
 
             # reverse order
-            for i in range(0, flow_num):
+            for i in range(flow_num):
                 dt = unadjusted_schedule_dates[flow_num - i - 1]
                 self._adjusted_dates.append(dt)
 
             # holiday adjust dates except last one
-            for i in range(0, flow_num - 1):
+            for i in range(flow_num - 1):
                 dt = calendar.adjust(self._adjusted_dates[i],
                                      self._bus_day_adjust_type)
 
@@ -285,7 +280,7 @@ class CDS:
             while next_date < end_date:
                 unadjusted_schedule_dates.append(next_date)
                 next_date = next_date.add_months(num_months)
-                flow_num = flow_num + 1
+                flow_num += 1
 
             for i in range(1, flow_num):
                 dt = calendar.adjust(unadjusted_schedule_dates[i],
@@ -351,11 +346,7 @@ class CDS:
 
         fwdDf = 1.0
 
-        if self._long_protection:
-            longProt = +1
-        else:
-            longProt = -1
-
+        longProt = +1 if self._long_protection else -1
         fullPV = fwdDf * longProt * \
             (prot_pv - self._running_coupon * fullRPV01 * self._notional)
         cleanPV = fwdDf * longProt * \
@@ -400,8 +391,7 @@ class CDS:
                         prot_method,
                         num_steps_per_year)
 
-        credit_dv01 = (v1['full_pv'] - v0['full_pv'])
-        return credit_dv01
+        return (v1['full_pv'] - v0['full_pv'])
 
     ###############################################################################
 
@@ -442,7 +432,7 @@ class CDS:
             # overkill as it has to do all the schedule generation which is
             # not needed as the dates are unchanged
             num_payments = len(swap._fixed_leg._payments)
-            for i in range(0, num_payments):
+            for i in range(num_payments):
                 old_pmt = swap._fixed_leg._payments[i]
                 swap._fixed_leg._payments[i] = old_pmt * (cpn + bump) / cpn
 
@@ -456,8 +446,7 @@ class CDS:
                         prot_method,
                         num_steps_per_year)
 
-        interest_dv01 = (v1['full_pv'] - v0['full_pv'])
-        return interest_dv01
+        return (v1['full_pv'] - v0['full_pv'])
 
     ###############################################################################
 
@@ -509,8 +498,7 @@ class CDS:
 
         cleanPV = fwdDf * (prot_pv - self._running_coupon * cleanRPV01
                            * self._notional)
-        clean_price = (self._notional - cleanPV) / self._notional * 100.0
-        return clean_price
+        return (self._notional - cleanPV) / self._notional * 100.0
 
     ###############################################################################
 
@@ -611,8 +599,7 @@ class CDS:
         # I assume accrued runs to the effective date
         payment_dates = self._adjusted_dates
         pcd = payment_dates[0]
-        accrued_days = (self._step_in_date - pcd)
-        return accrued_days
+        return (self._step_in_date - pcd)
 
     ###############################################################################
 
@@ -671,7 +658,7 @@ class CDS:
         libor_curve = issuer_curve._libor_curve
 
         paymentTimes = []
-        for it in range(0, len(self._adjusted_dates)):
+        for it in range(len(self._adjusted_dates)):
             t = (self._adjusted_dates[it] - valuation_date) / gDaysInYear
             paymentTimes.append(t)
 
@@ -714,8 +701,7 @@ class CDS:
                                     issuer_curve,
                                     pv01_method)['full_rpv01']
 
-        v = fullRPV01 * self._notional * self._running_coupon
-        return v
+        return fullRPV01 * self._notional * self._running_coupon
 
     ###############################################################################
 
@@ -739,9 +725,7 @@ class CDS:
                                       num_steps_per_year,
                                       protMethod)
 
-        # By convention this is calculated using the clean RPV01
-        spd = prot / cleanRPV01 / self._notional
-        return spd
+        return prot / cleanRPV01 / self._notional
 
     ###############################################################################
 
@@ -766,11 +750,7 @@ class CDS:
         fwdDf = 1.0
         bump_size = 0.0001
 
-        if self._long_protection:
-            long_protection = +1
-        else:
-            long_protection = -1
-
+        long_protection = +1 if self._long_protection else -1
         # The sign of he accrued has already been sign adjusted for direction
         accrued = self.accrued_interest()
 

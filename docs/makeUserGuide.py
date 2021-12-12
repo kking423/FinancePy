@@ -56,16 +56,13 @@ def parseMarkdown(lines):
 
         if line[0] == "*":
             lineFound = True
-            if bulletListActive is False:
+            if not bulletListActive:
                 parsedLines.append("\\begin{itemize}")
                 parsedLines.append("\n")
                 bulletListActive = True
-                parsedLines.append("\\item{" + line[1:] + "}")
-                parsedLines.append("\n")
-            else:
-                parsedLines.append("\\item{" + line[1:] + "}")
-                parsedLines.append("\n")
-        elif bulletListActive is True:
+            parsedLines.append("\\item{" + line[1:] + "}")
+            parsedLines.append("\n")
+        elif bulletListActive:
             bulletListActive = False
             parsedLines.append("\\end{itemize}")
             parsedLines.append("\n")
@@ -73,16 +70,13 @@ def parseMarkdown(lines):
         if line[0].isdigit() is True:
             lineFound = True
             col = line.find(".") + 1
-            if numberedListActive is False:
+            if not numberedListActive:
                 parsedLines.append("\\begin{enumerate}")
                 parsedLines.append("\n")
                 numberedListActive = True
-                parsedLines.append("\\item{" + line[col:] + "}")
-                parsedLines.append("\n")
-            else:
-                parsedLines.append("\\item{" + line[col:] + "}")
-                parsedLines.append("\n")
-        elif numberedListActive is True:
+            parsedLines.append("\\item{" + line[col:] + "}")
+            parsedLines.append("\n")
+        elif numberedListActive:
             numberedListActive = False
             parsedLines.append("\\end{enumerate}")
             parsedLines.append("\n")
@@ -112,15 +106,15 @@ def parseMarkdown(lines):
             parsedLines.append("\\section*{" + content + "}")
             parsedLines.append("\n")
 
-        if lineFound is False:
+        if not lineFound:
             parsedLines.append(line)
 
-    if bulletListActive is True:
+    if bulletListActive:
         bulletListActive = False
         parsedLines.append("\\end{itemize}")
         parsedLines.append("\n")
 
-    if numberedListActive is True:
+    if numberedListActive:
         numberedListActive = False
         parsedLines.append("\\end{enumerate}")
         parsedLines.append("\n")
@@ -160,26 +154,20 @@ def buildHead():
     """ Start latex file with a header that sets all of the document
     properties. """
 
-    f = open(newHeadFile, 'r')
-    lines = f.readlines()
-    f.close()
-
-    f = open(userGuideFileName, 'w', encoding="utf-8")
-    f.writelines(lines)
-    f.close()
+    with open(newHeadFile, 'r') as f:
+        lines = f.readlines()
+    with open(userGuideFileName, 'w', encoding="utf-8") as f:
+        f.writelines(lines)
 
 ##########################################################################
 
 
 def buildTail():
     """ Add on end latex to close document. """
-    f = open(tailFile, 'r')
-    lines = f.readlines()
-    f.close()
-
-    f = open(userGuideFileName, 'a', encoding="utf-8")
-    f.writelines(lines)
-    f.close()
+    with open(tailFile, 'r') as f:
+        lines = f.readlines()
+    with open(userGuideFileName, 'a', encoding="utf-8") as f:
+        f.writelines(lines)
 
 ##########################################################################
 
@@ -188,17 +176,13 @@ def buildIntro(introfile):
     """ Add on end latex to close document. """
     print("Building introduction from file:", introfile)
 
-    f = open(introfile, 'r')
-    lines = f.readlines()
-    f.close()
-
+    with open(introfile, 'r') as f:
+        lines = f.readlines()
     parsedLines = parseMarkdown(lines)
 
-    f = open(userGuideFileName, 'a', encoding="utf-8")
-
-    f.write("\\chapter{Introduction to FinancePy}")
-    f.writelines(parsedLines)
-    f.close()
+    with open(userGuideFileName, 'a', encoding="utf-8") as f:
+        f.write("\\chapter{Introduction to FinancePy}")
+        f.writelines(parsedLines)
 
 ##########################################################################
 
@@ -210,24 +194,14 @@ def buildChapter(folderName):
     print("Building chapter in folder:", folderName)
 
     readMeFile = folderName + "//" + "README.md"
-    f = open(readMeFile, 'r', encoding="utf-8")
-    readMeLines = f.readlines()
-    f.close()
-
+    with open(readMeFile, 'r', encoding="utf-8") as f:
+        readMeLines = f.readlines()
     chapterName = folderName.replace("//", ".")
     chapterName = chapterName.replace("...", "")
 
-    newLines = []
-    newLines.append("\n")
-    newLines.append("\\chapter{" + chapterName + "}")
-    newLines.append("\n")
-#    newLines.append("\\section{Introduction}")
-#    newLines.append("\n")
-
-    f = open(userGuideFileName, 'a', encoding="utf-8")
-    f.writelines(newLines)
-    f.close()
-
+    newLines = ['\n', "\\chapter{" + chapterName + "}", '\n']
+    with open(userGuideFileName, 'a', encoding="utf-8") as f:
+        f.writelines(newLines)
     # validIntro = False
     # for line in readMeLines:
 
@@ -254,33 +228,29 @@ def buildChapter(folderName):
 
     readMeLines = parseMarkdown(readMeLines)
 
-    f = open(userGuideFileName, 'a', encoding="utf-8")
-    f.writelines(readMeLines)
-    f.close()
-
+    with open(userGuideFileName, 'a', encoding="utf-8") as f:
+        f.writelines(readMeLines)
     modules = glob.glob(folderName + "//*.py")
 
     for module in modules:
         moduleName = module.split("\\")[-1]
-        escapedModuleName = sub("_", "\\_", moduleName[0:-3])
-        f = open(userGuideFileName, 'a', encoding="utf-8")
-        f.write("\\newpage\n")
-        f.write("\\section{" + escapedModuleName + "}\n")
-        f.write("\n")
-        f.close()
+        escapedModuleName = sub("_", "\\_", moduleName[:-3])
+        with open(userGuideFileName, 'a', encoding="utf-8") as f:
+            f.write("\\newpage\n")
+            f.write("\\section{" + escapedModuleName + "}\n")
+            f.write("\n")
         parseModule(module)
 
     modules = glob.glob(folderName + "//TestFin*.py")
 
     for module in modules:
         moduleName = module.split("\\")[-1]
-        escapedModuleName = sub("_", "\\_", moduleName[0:-3])
-        f = open(userGuideFileName, 'a', encoding="utf-8")
-        f.write("\n")
-        f.write("\\newpage\n")
-        f.write("\\section{" + escapedModuleName + "}\n")
-        f.write("\n")
-        f.close()
+        escapedModuleName = sub("_", "\\_", moduleName[:-3])
+        with open(userGuideFileName, 'a', encoding="utf-8") as f:
+            f.write("\n")
+            f.write("\\newpage\n")
+            f.write("\\section{" + escapedModuleName + "}\n")
+            f.write("\n")
         parseModule(module)
 
 ##########################################################################
@@ -290,10 +260,8 @@ def parseModule(moduleName):
     """ Parse a module looking for classes, functions and classes for
     enumerated types. Functions inside classes are parsed inside the class. """
     print(moduleName)
-    f = open(moduleName, 'r', encoding="utf-8")
-    lines = f.readlines()
-    f.close()
-
+    with open(moduleName, 'r', encoding="utf-8") as f:
+        lines = f.readlines()
     lines = [sub(r"\\", r"\\\\", line) for line in lines]
     lines = [sub("_", "\\_", line) for line in lines]
 
@@ -308,7 +276,7 @@ def parseModule(moduleName):
     # Module level classes and functions
     numRows = len(lines)
 
-    for rowNum in range(0, numRows):
+    for rowNum in range(numRows):
 
         line = lines[rowNum]
 
@@ -328,34 +296,29 @@ def parseModule(moduleName):
     startClassLines.append(numRows)
     startFunctionLines.append(numRows)
 
-    # print("startClassLines", startClassLines)
+    with open(userGuideFileName, 'a', encoding="utf-8") as f:
+        for c in range(numEnums):
+            newLines = parseEnum(lines, startEnumLines[c], startEnumLines[c + 1])
 
-    f = open(userGuideFileName, 'a', encoding="utf-8")
+            for newLine in newLines:
+                f.writelines(newLine)
 
-    for c in range(0, numEnums):
-        newLines = parseEnum(lines, startEnumLines[c], startEnumLines[c + 1])
+        for c in range(numClasses):
+            newLines = parseClass(lines,
+                                  startClassLines[c],
+                                  startClassLines[c + 1])
 
-        for newLine in newLines:
-            f.writelines(newLine)
+            for newLine in newLines:
+                f.writelines(newLine)
 
-    for c in range(0, numClasses):
-        newLines = parseClass(lines,
-                              startClassLines[c],
-                              startClassLines[c + 1])
+        for c in range(numFunctions):
+            newLines = parseFunction(
+                lines, startFunctionLines[c], startFunctionLines[c + 1])
 
-        for newLine in newLines:
-            f.writelines(newLine)
+            for newLine in newLines:
+                f.writelines(newLine)
 
-    for c in range(0, numFunctions):
-        newLines = parseFunction(
-            lines, startFunctionLines[c], startFunctionLines[c + 1])
-
-        for newLine in newLines:
-            f.writelines(newLine)
-
-        f.write("\n")
-
-    f.close()
+            f.write("\n")
 
 ##########################################################################
 
@@ -370,7 +333,6 @@ def parseClass(lines, startLine, endLine):
     className = lines[startLine].split(" ")[1]
     className = className.replace(":", "")
     className = className.replace("\n", "")
-
 #    print(className, startLine, endLine)
 
     newLines.append("\\subsection*{Class: " + className + "}")
@@ -409,7 +371,7 @@ def parseClass(lines, startLine, endLine):
             endComment = True
             break
 
-    if startComment is False and endComment is False:
+    if not startComment and not endComment:
         # assume it's a one-line comment
         endCommentRow = startCommentRow
         endComment = True
@@ -466,20 +428,16 @@ def parseClass(lines, startLine, endLine):
             for dataMember in dataMembers:
                 newLines.append("\\item{" + dataMember + "}\n")
             newLines.append("\\end{itemize}")
-            newLines.append("\n")
-            newLines.append("\n")
         else:
             newLines.append("No data members found.")
-            newLines.append("\n")
-            newLines.append("\n")
-
+        newLines.append("\n")
+        newLines.append("\n")
         newLines.append("\\subsection*{Functions}\n")
         newLines.append("\n")
 
     # Now get the functions
     numClassFunctions = 0
     startClassFunctionLines = []
-
 #    print(startLine, endLine)
     for rowNum in range(startLine, endLine):
 
@@ -496,7 +454,7 @@ def parseClass(lines, startLine, endLine):
     if (endClassName != -1):
         className = className[:endClassName]
 
-    for c in range(0, numClassFunctions):
+    for c in range(numClassFunctions):
         newLines += parseFunction(lines,
                                   startClassFunctionLines[c],
                                   startClassFunctionLines[c + 1],
@@ -593,11 +551,7 @@ def parseFunction(lines, startLine, endLine, className=""):
         line = lines[rowNum]
 
         if line.count("'''") == 1 or line.count('"""') == 1:
-            if line.count("'''") == 1:
-                commentInit = "'''"
-            else:
-                commentInit = '"""'
-
+            commentInit = "'''" if line.count("'''") == 1 else '"""'
             startCommentRow = rowNum
             for rowNum in range(rowNum+1, endLine):
                 line = lines[rowNum]
@@ -608,11 +562,7 @@ def parseFunction(lines, startLine, endLine, className=""):
             break
 
         if line.count("'''") == 2 or line.count('"""') == 2:
-            if line.count("'''") == 2:
-                commentInit = "'''"
-            else:
-                commentInit = '"""'
-
+            commentInit = "'''" if line.count("'''") == 2 else '"""'
             startCommentRow = rowNum
             endCommentRow = rowNum
             endComment = True
@@ -639,14 +589,8 @@ def parseFunction(lines, startLine, endLine, className=""):
     # However, must be after `extractParams` where escaping is required
     functionSignature = functionSignature.replace("\\_", "_")
 
-    # LATEX FORMATTING
-    if className != "":
-        functionDescription = r"\subsubsection*{{\bf " + \
-            functionName + "}}\n"
-    else:
-        functionDescription = r"\subsubsection*{{\bf " + \
-            functionName + "}}\n"
-
+    functionDescription = r"\subsubsection*{{\bf " + \
+        functionName + "}}\n"
     functionDescription += "{\\it "
     functionDescription += functionComment
     functionDescription += "}"

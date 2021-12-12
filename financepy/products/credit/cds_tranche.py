@@ -132,11 +132,11 @@ class CDSTranche:
         beta1 = sqrt(corr1)
         beta2 = sqrt(corr2)
         beta_vector1 = np.zeros(num_credits)
-        for bb in range(0, num_credits):
+        for bb in range(num_credits):
             beta_vector1[bb] = beta1
 
         beta_vector2 = np.zeros(num_credits)
-        for bb in range(0, num_credits):
+        for bb in range(num_credits):
             beta_vector2[bb] = beta2
 
         qVector = np.zeros(num_credits)
@@ -154,7 +154,7 @@ class CDSTranche:
 
             t = (payment_dates[i] - valuation_date) / gDaysInYear
 
-            for j in range(0, num_credits):
+            for j in range(num_credits):
                 issuer_curve = issuer_curves[j]
                 vTimes = issuer_curve._times
                 qRow = issuer_curve._values

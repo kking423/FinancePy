@@ -127,13 +127,11 @@ class DiscountCurveNS(DiscountCurve):
 
         zero_rates = self._zero_rate(dc_times)
 
-        df = self._zero_to_df(self._valuation_date,
+        return self._zero_to_df(self._valuation_date,
                               zero_rates,
                               dc_times,
                               self._freq_type,
                               self._day_count_type)
-
-        return df
 
     ###############################################################################
 

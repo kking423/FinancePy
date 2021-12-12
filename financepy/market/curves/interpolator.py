@@ -35,7 +35,7 @@ class InterpTypes(Enum):
 def interpolate(t: (float, np.ndarray),  # time or array of times
                 times: np.ndarray,  # Vector of times on grid
                 dfs: np.ndarray,  # Vector of discount factors
-                method: int):  # Interpolation method which is value of enum
+                method: int):    # Interpolation method which is value of enum
     """ Fast interpolation of discount factors at time x given discount factors
     at times provided using one of the methods in the enum InterpTypes. The
     value of x can be an array so that the function is vectorised. """
@@ -46,17 +46,14 @@ def interpolate(t: (float, np.ndarray),  # time or array of times
             print(t)
             raise FinError("Interpolate times must all be >= 0")
 
-        u = _uinterpolate(t, times, dfs, method)
-        return u
+        return _uinterpolate(t, times, dfs, method)
     elif type(t) is np.ndarray:
 
         if np.any(t < 0.0):
             print(t)
             raise FinError("Interpolate times must all be >= 0")
 
-        v = _vinterpolate(t, times, dfs, method)
-
-        return v
+        return _vinterpolate(t, times, dfs, method)
     else:
         raise FinError("Unknown input type" + type(t))
 
@@ -80,7 +77,7 @@ def _uinterpolate(t, times, dfs, method):
 
     i = 0
     while times[i] < t and i < num_points - 1:
-        i = i + 1
+        i += 1
 
     if t > times[i]:
         i = num_points
@@ -98,50 +95,33 @@ def _uinterpolate(t, times, dfs, method):
             r2 = -np.log(dfs[i]) / times[i]
             dt = times[i] - times[i - 1]
             rvalue = ((times[i] - t) * r1 + (t - times[i - 1]) * r2) / dt
-            yvalue = np.exp(-rvalue * t)
         elif i < num_points:
             r1 = -np.log(dfs[i - 1]) / times[i - 1]
             r2 = -np.log(dfs[i]) / times[i]
             dt = times[i] - times[i - 1]
             rvalue = ((times[i] - t) * r1 + (t - times[i - 1]) * r2) / dt
-            yvalue = np.exp(-rvalue * t)
         else:
             r1 = -np.log(dfs[i - 1]) / times[i - 1]
             r2 = -np.log(dfs[i - 1]) / times[i - 1]
             dt = times[i - 1] - times[i - 2]
             rvalue = ((times[i - 1] - t) * r1 + (t - times[i - 2]) * r2) / dt
-            yvalue = np.exp(-rvalue * t)
-
+        yvalue = np.exp(-rvalue * t)
         return yvalue
-
-    ###########################################################################
-    # linear interpolation of log(y(x)) which means the linear interpolation of
-    # continuously compounded zero rates in the case of discount discount
-    # This is also FLAT FORWARDS
-    ###########################################################################
 
     elif method == InterpTypes.FLAT_FWD_RATES.value:
 
-        if i == 1:
+        if i == 1 or i < num_points:
             rt1 = -np.log(dfs[i - 1])
             rt2 = -np.log(dfs[i])
             dt = times[i] - times[i - 1]
             rtvalue = ((times[i] - t) * rt1 + (t - times[i - 1]) * rt2) / dt
-            yvalue = np.exp(-rtvalue)
-        elif i < num_points:
-            rt1 = -np.log(dfs[i - 1])
-            rt2 = -np.log(dfs[i])
-            dt = times[i] - times[i - 1]
-            rtvalue = ((times[i] - t) * rt1 + (t - times[i - 1]) * rt2) / dt
-            yvalue = np.exp(-rtvalue)
         else:
             rt1 = -np.log(dfs[i - 2])
             rt2 = -np.log(dfs[i - 1])
             dt = times[i - 1] - times[i - 2]
             rtvalue = ((times[i - 1] - t) * rt1 +
                        (t - times[i - 2]) * rt2) / dt
-            yvalue = np.exp(-rtvalue)
-
+        yvalue = np.exp(-rtvalue)
         return yvalue
 
     elif method == InterpTypes.LINEAR_FWD_RATES.value:
@@ -185,7 +165,7 @@ def _vinterpolate(xValues,
 
     n = xValues.size
     yvalues = np.empty(n)
-    for i in range(0, n):
+    for i in range(n):
         yvalues[i] = _uinterpolate(xValues[i], xvector, dfs, method)
 
     return yvalues

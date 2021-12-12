@@ -61,8 +61,7 @@ def g(K, *args):
                            delta_method_value,
                            option_type_value)
 
-    obj_fn = delta_target - delta_out
-    return obj_fn
+    return delta_target - delta_out
 
 ###############################################################################
 # Do not cache this function
@@ -135,10 +134,7 @@ def obj_fast(params, *args):
     sigma_25D_RR = (sigma_K_25D_C - sigma_K_25D_P)
     term3 = (sigma_25D_RR - targetRRVol)**2
 
-    # sum up the errors
-    err = term1 + term2 + term3
-
-    return err
+    return term1 + term2 + term3
 
 ###############################################################################
 # This function cannot be jitted until the scipy minimisation has been replaced
@@ -207,8 +203,7 @@ def solve_to_horizon_fast(s, t,
                                            delta_method_value, K_25D_P_MS,
                                            params)
 
-    ret = (params, K_25D_C_MS, K_25D_P_MS, K_25D_C, K_25D_P)
-    return ret
+    return params, K_25D_C_MS, K_25D_P_MS, K_25D_C, K_25D_P
 
 ###############################################################################
 
@@ -266,9 +261,7 @@ def delta_fit(K, *args):
     delta_out = fast_delta(
         s, t, K, rd, rf, v, deltaTypeValue, option_type_value)
     inverseDeltaOut = norminvcdf(np.abs(delta_out))
-    invObjFn = inverseDeltaTarget - inverseDeltaOut
-
-    return invObjFn
+    return inverseDeltaTarget - inverseDeltaOut
 
 ###############################################################################
 # Unable to cache this function due to dynamic globals warning. Revisit.
@@ -292,10 +285,8 @@ def solver_for_smile_strike_fast(s, t, rd, rf,
     argtuple = (volatilityTypeValue, s, t, rd, rf, option_type_value,
                 delta_method_value, inverseDeltaTarget, parameters)
 
-    K = newton_secant(delta_fit, x0=initialGuess, args=argtuple,
+    return newton_secant(delta_fit, x0=initialGuess, args=argtuple,
                       tol=1e-8, maxiter=50)
-
-    return K
 
 ###############################################################################
 # Unable to cache function
@@ -329,11 +320,7 @@ def solve_for_strike(spot_fx_rate,
         domDF = np.exp(-rd*tdel)
         forDF = np.exp(-rf*tdel)
 
-        if option_type_value == OptionTypes.EUROPEAN_CALL.value:
-            phi = +1.0
-        else:
-            phi = -1.0
-
+        phi = +1.0 if option_type_value == OptionTypes.EUROPEAN_CALL.value else -1.0
         F0T = spot_fx_rate * forDF / domDF
         vsqrtt = volatility * np.sqrt(tdel)
         arg = delta_target*phi/forDF  # CHECK THIS !!!
@@ -346,11 +333,7 @@ def solve_for_strike(spot_fx_rate,
         domDF = np.exp(-rd*tdel)
         forDF = np.exp(-rf*tdel)
 
-        if option_type_value == OptionTypes.EUROPEAN_CALL.value:
-            phi = +1.0
-        else:
-            phi = -1.0
-
+        phi = +1.0 if option_type_value == OptionTypes.EUROPEAN_CALL.value else -1.0
         F0T = spot_fx_rate * forDF / domDF
         vsqrtt = volatility * np.sqrt(tdel)
         arg = delta_target*phi   # CHECK THIS!!!!!!!!
@@ -358,17 +341,10 @@ def solve_for_strike(spot_fx_rate,
         K = F0T * np.exp(-vsqrtt * (phi*norminvdelta - vsqrtt/2.0))
         return K
 
-    elif delta_method_value == FinFXDeltaMethod.SPOT_DELTA_PREM_ADJ.value:
-
-        argtuple = (spot_fx_rate, tdel, rd, rf, volatility,
-                    delta_method_value, option_type_value, delta_target)
-
-        K = newton_secant(g, x0=spot_fx_rate, args=argtuple,
-                          tol=1e-7, maxiter=50)
-
-        return K
-
-    elif delta_method_value == FinFXDeltaMethod.FORWARD_DELTA_PREM_ADJ.value:
+    elif delta_method_value in [
+        FinFXDeltaMethod.SPOT_DELTA_PREM_ADJ.value,
+        FinFXDeltaMethod.FORWARD_DELTA_PREM_ADJ.value,
+    ]:
 
         argtuple = (spot_fx_rate, tdel, rd, rf, volatility,
                     delta_method_value, option_type_value, delta_target)
@@ -418,16 +394,13 @@ class FXVolSurface():
         if len(currency_pair) != 6:
             raise FinError("Currency pair must be 6 characters.")
 
-        self._forName = self._currency_pair[0:3]
+        self._forName = self._currency_pair[:3]
         self._domName = self._currency_pair[3:6]
 
         self._notional_currency = notional_currency
         self._dom_discount_curve = dom_discount_curve
         self._for_discount_curve = for_discount_curve
         self._num_vol_curves = len(tenors)
-
-        if len(atm_vols) != self._num_vol_curves:
-            raise FinError("Number ATM vols must equal number of tenors")
 
         if len(atm_vols) != self._num_vol_curves:
             raise FinError("Number ATM vols must equal number of tenors")
@@ -461,7 +434,7 @@ class FXVolSurface():
         self._tenorIndex = 0
 
         self._expiry_dates = []
-        for i in range(0, self._num_vol_curves):
+        for i in range(self._num_vol_curves):
             expiry_date = valuation_date.add_tenor(tenors[i])
             self._expiry_dates.append(expiry_date)
 
@@ -534,8 +507,7 @@ class FXVolSurface():
         if vart < 0.0:
             raise FinError("Negative variance.")
 
-        volt = np.sqrt(vart/t)
-        return volt
+        return np.sqrt(vart/t)
 
 ###############################################################################
 
@@ -580,7 +552,7 @@ class FXVolSurface():
         #######################################################################
         spot_date = self._valuation_date
 
-        for i in range(0, num_vol_curves):
+        for i in range(num_vol_curves):
 
             expiry_date = self._expiry_dates[i]
             texp = (expiry_date - spot_date) / gDaysInYear
@@ -613,7 +585,7 @@ class FXVolSurface():
         #######################################################################
 
         x_inits = []
-        for i in range(0, num_vol_curves):
+        for i in range(num_vol_curves):
 
             atm_vol = self._atm_vols[i]
             ms25 = self._mktStrangle25DeltaVols[i]
@@ -679,7 +651,7 @@ class FXVolSurface():
         delta_method_value = self._deltaMethod.value
         vol_type_value = self._volatility_function_type.value
 
-        for i in range(0, num_vol_curves):
+        for i in range(num_vol_curves):
 
             t = self._texp[i]
             rd = self._rd[i]
@@ -688,7 +660,6 @@ class FXVolSurface():
             atm_vol = self._atm_vols[i]
             ms25DVol = self._mktStrangle25DeltaVols[i]
             rr25DVol = self._riskReversal25DeltaVols[i]
-
 #            print(t, rd, rf, K_ATM, atm_vol, ms25DVol, rr25DVol)
 
             res = solve_to_horizon_fast(s, t, rd, rf, K_ATM,
@@ -726,10 +697,8 @@ class FXVolSurface():
                     self._deltaMethod.value,
                     inverseDeltaTarget, self._parameters[tenorIndex])
 
-        K = newton_secant(delta_fit, x0=initialValue, args=argtuple,
+        return newton_secant(delta_fit, x0=initialValue, args=argtuple,
                           tol=1e-5, maxiter=50)
-
-        return K
 
 ###############################################################################
 

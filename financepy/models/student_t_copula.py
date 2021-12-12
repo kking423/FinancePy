@@ -28,10 +28,10 @@ class StudentTCopula():
 
         corrTimes = np.empty(shape=(num_credits, 2 * num_trials))
 
-        for iTrial in range(0, num_trials):
+        for iTrial in range(num_trials):
             chi2 = np.random.chisquare(degreesOfFreedom)
             c = sqrt(chi2 / degreesOfFreedom)
-            for iCredit in range(0, num_credits):
+            for iCredit in range(num_credits):
                 issuer_curve = issuer_curves[iCredit]
                 g = y[iCredit, iTrial] / c
                 u1 = student.cdf(g, degreesOfFreedom)

@@ -71,7 +71,7 @@ def _obj(params, *args):
 
     tot = 0.0
 
-    for i in range(0, num_strikes):
+    for i in range(num_strikes):
         fittedVol = vol_function(vol_type_value, params, f, strikes[i], t)
         mkt_vol = volatility_grid[index][i]
         diff = fittedVol - mkt_vol
@@ -122,8 +122,7 @@ def _solve_to_horizon(s, t, r, q,
             opt = minimize(_obj, x_inits, args, method="CG", tol=tol)
             xopt = opt.x
 
-    params = np.array(xopt)
-    return params
+    return np.array(xopt)
 
 ###############################################################################
 
@@ -185,9 +184,7 @@ def _delta_fit(k, *args):
     v = vol_function(vol_type_value, params, f, k, t)
     delta_out = bs_delta(s, t, k, r, q, v, option_type_value)
     inverseDeltaOut = norminvcdf(np.abs(delta_out))
-    invObjFn = inverseDeltaTarget - inverseDeltaOut
-
-    return invObjFn
+    return inverseDeltaTarget - inverseDeltaOut
 
 ###############################################################################
 # Unable to cache this function due to dynamic globals warning. Revisit.
@@ -213,10 +210,8 @@ def _solver_for_smile_strike(s, t, r, q,
                 inverseDeltaTarget,
                 parameters)
 
-    K = newton_secant(_delta_fit, x0=initialGuess, args=argtuple,
+    return newton_secant(_delta_fit, x0=initialGuess, args=argtuple,
                       tol=1e-8, maxiter=50)
-
-    return K
 
 ###############################################################################
 # Unable to cache function and if I remove njit it complains about pickle
@@ -295,18 +290,11 @@ class EquityVolSurface:
 
         num_curves = self._numExpiryDates
 
-        if num_curves == 1:
+        if num_curves == 1 or texp <= self._texp[0]:
 
             index0 = 0
             index1 = 0
 
-        # If the time is below first time then assume a flat vol
-        elif texp <= self._texp[0]:
-
-            index0 = 0
-            index1 = 0
-
-        # If the time is beyond the last time then extrapolate with a flat vol
         elif texp >= self._texp[-1]:
 
             index0 = len(self._texp) - 1
@@ -344,18 +332,15 @@ class EquityVolSurface:
         vart0 = vol0*vol0*t0
         vart1 = vol1*vol1*t1
 
-        if np.abs(t1-t0) > 1e-6:
-            vart = ((texp-t0) * vart1 + (t1-texp) * vart0) / (t1 - t0)
+        if np.abs(t1 - t0) <= 1e-6:
+            return vol1
 
-            if vart < 0.0:
-                raise FinError("Negative variance.")
+        vart = ((texp-t0) * vart1 + (t1-texp) * vart0) / (t1 - t0)
 
-            volt = np.sqrt(vart/texp)
+        if vart < 0.0:
+            raise FinError("Negative variance.")
 
-        else:
-            volt = vol1
-
-        return volt
+        return np.sqrt(vart/texp)
 
 ###############################################################################
 
@@ -477,18 +462,11 @@ class EquityVolSurface:
         num_curves = self._numExpiryDates
 
         # If there is only one time horizon then assume flat vol to this time
-        if num_curves == 1:
+        if num_curves == 1 or texp <= self._texp[0]:
 
             index0 = 0
             index1 = 0
 
-        # If the time is below first time then assume a flat vol
-        elif texp <= self._texp[0]:
-
-            index0 = 0
-            index1 = 0
-
-        # If the time is beyond the last time then extrapolate with a flat vol
         elif texp > self._texp[-1]:
 
             index0 = len(self._texp) - 1
@@ -615,7 +593,7 @@ class EquityVolSurface:
 
         spot_date = self._valuation_date
 
-        for i in range(0, numExpiryDates):
+        for i in range(numExpiryDates):
 
             expiry_date = self._expiry_dates[i]
             texp = (expiry_date - spot_date) / gDaysInYear
@@ -639,7 +617,7 @@ class EquityVolSurface:
         x_init = np.zeros(num_parameters)
         x_inits.append(x_init)
 
-        for i in range(0, numExpiryDates):
+        for i in range(numExpiryDates):
 
             t = self._texp[i]
             r = self._r[i]
@@ -672,12 +650,12 @@ class EquityVolSurface:
             print("STOCK PRICE:", self._stock_price)
             print("==========================================================")
 
-        for i in range(0, self._numExpiryDates):
+        for i in range(self._numExpiryDates):
 
             expiry_date = self._expiry_dates[i]
             print("==========================================================")
 
-            for j in range(0, self._num_strikes):
+            for j in range(self._num_strikes):
 
                 strike = self._strikes[j]
 
@@ -702,7 +680,7 @@ class EquityVolSurface:
 
         dbns = []
 
-        for iTenor in range(0, self._numExpiryDates):
+        for iTenor in range(self._numExpiryDates):
 
             f = self._F0T[iTenor]
             t = self._texp[iTenor]
@@ -718,7 +696,7 @@ class EquityVolSurface:
             Ks = []
             vols = []
 
-            for iK in range(0, numIntervals):
+            for iK in range(numIntervals):
 
                 k = lowS + iK*dS
 
@@ -748,7 +726,8 @@ class EquityVolSurface:
         lowK = self._strikes[0] * 0.9
         highK = self._strikes[-1] * 1.1
 
-        for tenorIndex in range(0, self._numExpiryDates):
+        numIntervals = 30
+        for tenorIndex in range(self._numExpiryDates):
 
             expiry_date = self._expiry_dates[tenorIndex]
             plt.figure()
@@ -756,11 +735,10 @@ class EquityVolSurface:
             ks = []
             fittedVols = []
 
-            numIntervals = 30
             K = lowK
             dK = (highK - lowK)/numIntervals
 
-            for i in range(0, numIntervals):
+            for _ in range(numIntervals):
 
                 ks.append(K)
                 fittedVol = self.volatility_from_strike_date(
@@ -790,10 +768,10 @@ class EquityVolSurface:
         s += label_to_string("STOCK PRICE", self._stock_price)
         s += label_to_string("VOL FUNCTION", self._volatility_function_type)
 
-        for i in range(0, self._numExpiryDates):
+        for i in range(self._numExpiryDates):
             s += label_to_string("EXPIRY DATE", self._expiry_dates[i])
 
-        for i in range(0, self._num_strikes):
+        for i in range(self._num_strikes):
             s += label_to_string("STRIKE", self._strikes[i])
 
         s += label_to_string("EQUITY VOL GRID", self._volatility_grid)

@@ -131,7 +131,7 @@ def _obj(params, *args):
     num_strikes = len(volatility_grid)
     numExpiryDates = len(volatility_grid[0])
 
-    for i in range(0, num_strikes):
+    for i in range(num_strikes):
 
         k = strikesGrid[i][index]
 
@@ -191,8 +191,7 @@ def _solve_to_horizon(t, f,
     print("t: %9.5f alpha:%9.5f beta: %9.5f rho: %9.5f nu: %9.5f" %
           (t, xopt[0], 0.5, xopt[1], xopt[2]))
 
-    params = np.array(xopt)
-    return params
+    return np.array(xopt)
 
 ###############################################################################
 
@@ -457,18 +456,11 @@ class SwaptionVolSurface():
 
         num_curves = self._numExpiryDates
 
-        if num_curves == 1:
+        if num_curves == 1 or texp <= self._texp[0]:
 
             index0 = 0
             index1 = 0
 
-        # If the time is below first time then assume a flat vol
-        elif texp <= self._texp[0]:
-
-            index0 = 0
-            index1 = 0
-
-        # If the time is beyond the last time then extrapolate with a flat vol
         elif texp >= self._texp[-1]:
 
             index0 = len(self._texp) - 1
@@ -506,18 +498,15 @@ class SwaptionVolSurface():
         vart0 = vol0*vol0*t0
         vart1 = vol1*vol1*t1
 
-        if np.abs(t1-t0) > 1e-6:
-            vart = ((texp-t0) * vart1 + (t1-texp) * vart0) / (t1 - t0)
+        if np.abs(t1 - t0) <= 1e-6:
+            return vol1
 
-            if vart < 0.0:
-                raise FinError("Negative variance.")
+        vart = ((texp-t0) * vart1 + (t1-texp) * vart0) / (t1 - t0)
 
-            volt = np.sqrt(vart/texp)
+        if vart < 0.0:
+            raise FinError("Negative variance.")
 
-        else:
-            volt = vol1
-
-        return volt
+        return np.sqrt(vart/texp)
 
 ###############################################################################
 
@@ -766,7 +755,7 @@ class SwaptionVolSurface():
         # TODO: ADD SPOT DAYS
         #######################################################################
 
-        for i in range(0, numExpiryDates):
+        for i in range(numExpiryDates):
 
             expiry_date = self._expiry_dates[i]
             texp = (expiry_date - self._valuation_date) / gDaysInYear
@@ -782,7 +771,7 @@ class SwaptionVolSurface():
         x_init = np.zeros(num_parameters)
         x_inits.append(x_init)
 
-        for i in range(0, numExpiryDates):
+        for i in range(numExpiryDates):
 
             t = self._texp[i]
             f = self._fwd_swap_rates[i]
@@ -816,12 +805,12 @@ class SwaptionVolSurface():
 
         K_dummy = 999
 
-        for i in range(0, self._numExpiryDates):
+        for i in range(self._numExpiryDates):
 
             expiry_date = self._expiry_dates[i]
             print("==========================================================")
 
-            for j in range(0, self._num_strikes):
+            for j in range(self._num_strikes):
 
                 strike = self._strike_grid[j][i]
 
@@ -891,7 +880,8 @@ class SwaptionVolSurface():
 
         volTypeVal = self._volatility_function_type.value
 
-        for tenorIndex in range(0, self._numExpiryDates):
+        numIntervals = 30
+        for tenorIndex in range(self._numExpiryDates):
 
             lowK = self._strike_grid[0][tenorIndex] * 0.9
             highK = self._strike_grid[-1][tenorIndex] * 1.1
@@ -902,14 +892,13 @@ class SwaptionVolSurface():
             ks = []
             fittedVols = []
 
-            numIntervals = 30
             K = lowK
             dK = (highK - lowK)/numIntervals
             params = self._parameters[tenorIndex]
             t = self._texp[tenorIndex]
             f = self._fwd_swap_rates[tenorIndex]
 
-            for i in range(0, numIntervals):
+            for _ in range(numIntervals):
 
                 ks.append(K)
                 fittedVol = self.volatility_from_strike_date(
@@ -942,7 +931,7 @@ class SwaptionVolSurface():
         s += label_to_string("DELTA METHOD", self._deltaMethod)
         s += label_to_string("VOL FUNCTION", self._volatility_function_type)
 
-        for i in range(0, self._numExpiryDates):
+        for i in range(self._numExpiryDates):
 
             s += "\n"
 
@@ -952,7 +941,7 @@ class SwaptionVolSurface():
 
             s += label_to_string("ATM VOLS", self._atm_vols[i]*100.0)
 
-            for j in range(0, self._num_strikes):
+            for j in range(self._num_strikes):
 
                 k = self._strikes[j]
                 vol = self._volGrid[i][j]

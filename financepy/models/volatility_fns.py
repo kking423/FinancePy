@@ -49,7 +49,7 @@ def vol_function_clark(params, f, k, t):
     arg = x / (sigma0 * np.sqrt(t))
     deltax = N(arg) - 0.50  # The -0.50 seems to be missing in book
     f = 0.0
-    for i in range(0, len(params)):
+    for i in range(len(params)):
         f += params[i] * (deltax ** i)
 
     return np.exp(f)
@@ -81,7 +81,7 @@ def vol_function_bloomberg(params, f, k, t):
     delta = N(d1)
 
     v = 0.0
-    for i in range(0, len(params)):
+    for i in range(len(params)):
         pwr = num_params - i - 1
         v += params[i] * (delta ** pwr)
 
@@ -113,8 +113,7 @@ def vol_function_svi(params, f, k, t):
     sigma = params[4]
 
     vart = a + b*(rho*(x-m)+np.sqrt((x-m)**2 + sigma*sigma))
-    v = np.sqrt(vart/t)
-    return v
+    return np.sqrt(vart/t)
 
 ###############################################################################
 ###############################################################################
@@ -133,8 +132,7 @@ def phi_ssvi(theta, gamma):
     if abs(theta) < 1e-8:
         theta = 1e-8
 
-    phi = (1.0/gamma/theta) * (1.0 - (1.0 - np.exp(-gamma*theta))/gamma/theta)
-    return phi
+    return (1.0/gamma/theta) * (1.0 - (1.0 - np.exp(-gamma*theta))/gamma/theta)
 
 
 @njit(float64(float64, float64, float64, float64, float64),
@@ -146,8 +144,7 @@ def ssvi(x, gamma, sigma, rho, t):
     p = phi_ssvi(theta, gamma)
     px = p * x
     g = px + rho
-    v = 0.5 * theta * (1. + rho * px + np.sqrt(g**2 + 1. - rho * rho))
-    return v
+    return 0.5 * theta * (1. + rho * px + np.sqrt(g**2 + 1. - rho * rho))
 
 
 @njit(float64(float64, float64, float64, float64, float64),
@@ -183,8 +180,7 @@ def ssvit(x, gamma, sigma, rho, t):
     eps = 0.0001
     ssvitplus = ssvi(x, gamma, sigma, rho, t + eps)
     ssvitminus = ssvi(x, gamma, sigma, rho, t - eps)
-    deriv = (ssvitplus - ssvitminus) / 2.0 / eps
-    return deriv
+    return (ssvitplus - ssvitminus) / 2.0 / eps
 
 
 @njit(float64(float64, float64, float64, float64, float64),
@@ -198,16 +194,14 @@ def g(x, gamma, sigma, rho, t):
     w1 = ssvi1(x, gamma, sigma, rho, t)
     w2 = ssvi2(x, gamma, sigma, rho, t)
     xwv = x * w1 / w
-    v = (1. - 0.5 * xwv) ** 2 - 0.25 * w1 * w1 * (0.25 + 1. / w) + 0.5 * w2
-    return v
+    return (1. - 0.5 * xwv) ** 2 - 0.25 * w1 * w1 * (0.25 + 1. / w) + 0.5 * w2
 
 
 @njit(float64(float64, float64, float64, float64, float64),
       fastmath=True, cache=True)
 def dminus(x, gamma, sigma, rho, t):
     vsqrt = np.sqrt(ssvi(x, gamma, sigma, rho, t))
-    v = -x / vsqrt - 0.5 * vsqrt
-    return v
+    return -x / vsqrt - 0.5 * vsqrt
 
 
 @njit(float64(float64, float64, float64, float64, float64),
@@ -225,8 +219,7 @@ def ssvi_local_varg(x, gamma, sigma, rho, t):
     # Compute the equivalent SSVI local variance
     num = ssvit(x, gamma, sigma, rho, t)
     den = g(x, gamma, sigma, rho, t)
-    var = num/den
-    return var
+    return num/den
 
 
 @njit(float64(float64[:], float64, float64, float64),
@@ -242,9 +235,7 @@ def vol_function_ssvi(params, f, k, t):
 
     vart = ssvi_local_varg(x, gamma, sigma, rho, t)
 
-    if vart < 0.0:
-        vart = 0.0
-
+    vart = max(vart, 0.0)
     sigma = np.sqrt(vart)
 
     print(gamma, sigma, rho, f, x, sigma)

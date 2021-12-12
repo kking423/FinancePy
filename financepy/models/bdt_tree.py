@@ -46,18 +46,17 @@ def f(x0, m, Q, rt, dfEnd, dt, sigma):
     for i in range(midm, 0, -1):
         rt[m, i-1] = rt[m, i] * np.exp(-2.0 * sigma * np.sqrt(dt))
 
-    for i in range(midm + 1, m + 1, 1):
+    for i in range(midm + 1, m + 1):
         rt[m, i] = rt[m, i-1] * np.exp(2.0 * sigma * np.sqrt(dt))
 
     sumInner = 0.0
-    for i in range(0, m+1):
+    for i in range(m+1):
         r = rt[m, i]
         nextPeriodDf = (1.0 / ((1.0 + r)**dt))
         q = Q[m, i]
         sumInner += q * nextPeriodDf
 
-    obj_fn = sumInner - dfEnd
-    return obj_fn
+    return sumInner - dfEnd
 
 ###############################################################################
 
@@ -74,7 +73,7 @@ def search_root(x0, m, Q, rt, dfEnd, dt, sigma):
     f0 = f(x0, m, Q, rt, dfEnd, dt, sigma)
     f1 = f(x1, m, Q, rt, dfEnd, dt, sigma)
 
-    for _ in range(0, max_iter):
+    for _ in range(max_iter):
 
         df = f1 - f0
 
@@ -123,7 +122,7 @@ def bermudan_swaption_tree_fast(texp, tmat,
     num_coupons = len(coupon_times)
 
     # Tree flows go all the way out to the swap maturity date
-    for i in range(0, num_coupons):
+    for i in range(num_coupons):
         tcpn = coupon_times[i]
         n = int(tcpn/_dt + 0.50)
         ttree = _tree_times[n]
@@ -140,9 +139,9 @@ def bermudan_swaption_tree_fast(texp, tmat,
 
     mapped_times = np.array([0.0])
     mapped_amounts = np.array([0.0])
+    accdAtExpiry = 0.0
     for n in range(1, len(_tree_times)):
 
-        accdAtExpiry = 0.0
         if _tree_times[n-1] < texp and _tree_times[n] >= texp:
             mapped_times = np.append(mapped_times, texp)
             mapped_amounts = np.append(mapped_amounts, accdAtExpiry)
@@ -154,7 +153,7 @@ def bermudan_swaption_tree_fast(texp, tmat,
     ###########################################################################
 
     accrued = np.zeros(num_time_steps)
-    for m in range(0, maturityStep+1):
+    for m in range(maturityStep+1):
         ttree = _tree_times[m]
         accrued[m] = accrued_interpolator(ttree, mapped_times, mapped_amounts)
         accrued[m] *= face_amount
@@ -174,7 +173,7 @@ def bermudan_swaption_tree_fast(texp, tmat,
     rec_values = np.zeros(shape=(num_time_steps, num_nodes))
 
     # Start with the value of the fixed leg at maturity
-    for k in range(0, num_nodes):
+    for k in range(num_nodes):
         flow = 1.0 + fixed_legFlows[maturityStep]
         fixed_leg_values[maturityStep, k] = flow * face_amount
 
@@ -183,7 +182,7 @@ def bermudan_swaption_tree_fast(texp, tmat,
         nm = m
         flow = fixed_legFlows[m] * face_amount
 
-        for k in range(0, nm+1):
+        for k in range(nm+1):
             rt = _rt[m, k]
             df = np.exp(- rt * _dt)
 
@@ -230,11 +229,6 @@ def bermudan_swaption_tree_fast(texp, tmat,
             elif exercise_typeInt == 3 and m > expiryStep:
 
                 raise FinError("American optionality not completed.")
-
-                # Need to define floating value on all grid dates
-
-                pay_values[m, k] = max(payExercise, holdPay)
-                rec_values[m, k] = max(recExercise, holdRec)
 
     return pay_values[0, 0], rec_values[0, 0]
 
@@ -312,7 +306,7 @@ def american_bond_option_tree_fast(texp, tmat,
         print(treeFlows)
 
     accrued = np.zeros(num_time_steps)
-    for m in range(0, maturityStep+1):
+    for m in range(maturityStep+1):
         ttree = _tree_times[m]
         accrued[m] = accrued_interpolator(ttree, coupon_times, coupon_flows)
         accrued[m] *= face_amount
@@ -405,12 +399,7 @@ def american_bond_option_tree_fast(texp, tmat,
             holdCall = call_option_values[m, k]
             holdPut = put_option_values[m, k]
 
-            if m == expiryStep:
-
-                call_option_values[m, k] = max(callExercise, holdCall)
-                put_option_values[m, k] = max(putExercise, holdPut)
-
-            elif exercise_typeInt == 3 and m < expiryStep:
+            if m == expiryStep or exercise_typeInt == 3 and m < expiryStep:
 
                 call_option_values[m, k] = max(callExercise, holdCall)
                 put_option_values[m, k] = max(putExercise, holdPut)

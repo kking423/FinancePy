@@ -31,8 +31,7 @@ def _f(df, *args):
     curve._values[num_points - 1] = df
     bondDiscountPrice = bond.clean_price_from_discount_curve(
         valuation_date, curve)
-    obj_fn = bondDiscountPrice - marketCleanPrice
-    return obj_fn
+    return bondDiscountPrice - marketCleanPrice
 
 ###############################################################################
 
@@ -79,7 +78,7 @@ class BondZeroCurve(DiscountCurve):
         self._values = np.array([1.0])
         df = 1.0
 
-        for i in range(0, len(self._bonds)):
+        for i in range(len(self._bonds)):
             bond = self._bonds[i]
             maturity_date = bond._maturity_date
             clean_price = self._clean_prices[i]
@@ -103,10 +102,7 @@ class BondZeroCurve(DiscountCurve):
 
         if f == 0:  # Simple interest
             zero_rate = (1.0/df-1.0)/t
-        if f == -1:  # Continuous
-            zero_rate = -np.log(df) / t
-        else:
-            zero_rate = (df**(-1.0/t) - 1) * f
+        zero_rate = -np.log(df) / t if f == -1 else (df**(-1.0/t) - 1) * f
         return zero_rate
 
 ###############################################################################
@@ -114,16 +110,14 @@ class BondZeroCurve(DiscountCurve):
     def df(self,
            dt: Date):
         t = input_time(dt, self)
-        z = interpolate(t, self._times, self._values, self._interp_type.value)
-        return z
+        return interpolate(t, self._times, self._values, self._interp_type.value)
 
 ###############################################################################
 
     def survival_prob(self,
                       dt: Date):
         t = input_time(dt, self)
-        q = interpolate(t, self._times, self._values, self._interp_type.value)
-        return q
+        return interpolate(t, self._times, self._values, self._interp_type.value)
 
 ###############################################################################
 
@@ -134,8 +128,7 @@ class BondZeroCurve(DiscountCurve):
         dt = 0.000001
         df1 = self.df(t)
         df2 = self.df(t+dt)
-        fwd = np.log(df1/df2)/dt
-        return fwd
+        return np.log(df1/df2)/dt
 
 ###############################################################################
 
@@ -156,8 +149,7 @@ class BondZeroCurve(DiscountCurve):
         year_frac = day_count.year_frac(date1, date2)[0]
         df1 = self.df(date1)
         df2 = self.df(date2)
-        fwd = (df1 / df2 - 1.0) / year_frac
-        return fwd
+        return (df1 / df2 - 1.0) / year_frac
 
 ###############################################################################
 

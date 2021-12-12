@@ -34,8 +34,8 @@ class BondPortfolio:
 
         self._flow_amounts = [0.0]
 
+        cpn = self._coupon / self._frequency
         for _ in self._flow_dates[1:]:
-            cpn = self._coupon / self._frequency
             self._flow_amounts.append(cpn)
 
 ###############################################################################
@@ -50,8 +50,7 @@ class BondPortfolio:
         dy = 0.0001  # 1 basis point
         p0 = self.full_priceFromYTM(settlement_date, ytm - dy, convention)
         p2 = self.full_priceFromYTM(settlement_date, ytm + dy, convention)
-        durn = -(p2 - p0) / dy / 2.0
-        return durn
+        return -(p2 - p0) / dy / 2.0
 
 ###############################################################################
 
@@ -64,8 +63,7 @@ class BondPortfolio:
 
         dd = self.dollar_duration(settlement_date, ytm, convention)
         fp = self.full_priceFromYTM(settlement_date, ytm, convention)
-        md = dd * (1.0 + ytm / self._frequency) / fp
-        return md
+        return dd * (1.0 + ytm / self._frequency) / fp
 
 ###############################################################################
 
@@ -78,8 +76,7 @@ class BondPortfolio:
 
         dd = self.dollar_duration(settlement_date, ytm, convention)
         fp = self.full_priceFromYTM(settlement_date, ytm, convention)
-        md = dd / fp
-        return md
+        return dd / fp
 
 ###############################################################################
 
@@ -94,8 +91,7 @@ class BondPortfolio:
         p0 = self.full_priceFromYTM(settlement_date, ytm - dy, convention)
         p1 = self.full_priceFromYTM(settlement_date, ytm, convention)
         p2 = self.full_priceFromYTM(settlement_date, ytm + dy, convention)
-        conv = ((p2 + p0) - 2.0 * p1) / dy / dy / p1 / self._par
-        return conv
+        return ((p2 + p0) - 2.0 * p1) / dy / dy / p1 / self._par
 
 ###############################################################################
 
@@ -108,8 +104,7 @@ class BondPortfolio:
 
         full_price = self.full_priceFromYTM(settlement_date, ytm, convention)
         accrued_amount = self._accrued_interest * self._par / self._face_amount
-        clean_price = full_price - accrued_amount
-        return clean_price
+        return full_price - accrued_amount
 
 ###############################################################################
 
@@ -138,8 +133,7 @@ class BondPortfolio:
         """ Calculate the current yield of the bond which is the
         coupon divided by the clean price (not the full price)"""
 
-        y = self._coupon * self._par / clean_price
-        return y
+        return self._coupon * self._par / clean_price
 
 ###############################################################################
 
@@ -214,7 +208,7 @@ class BondPortfolio:
                 # Any default results in all subsequent coupons being lost
                 # with zero recovery
 
-                pv = pv + (c / f) * df * q
+                pv += (c / f) * df * q
                 dq = q - prevQ
 
                 defaultingPrincipalPVPayStart += -dq * recovery_rate * prevDf
@@ -224,9 +218,9 @@ class BondPortfolio:
                 prevQ = q
                 prevDf = df
 
-        pv = pv + 0.50 * defaultingPrincipalPVPayStart
-        pv = pv + 0.50 * defaultingPrincipalPVPayEnd
-        pv = pv + df * q * self._redemption
+        pv += 0.50 * defaultingPrincipalPVPayStart
+        pv += 0.50 * defaultingPrincipalPVPayEnd
+        pv += df * q * self._redemption
         pv *= self._par
         return pv
 
@@ -248,8 +242,7 @@ class BondPortfolio:
                                                          survival_curve,
                                                          recovery_rate)
 
-        clean_price = full_price - self._accrued_interest
-        return clean_price
+        return full_price - self._accrued_interest
 
 ###############################################################################
 

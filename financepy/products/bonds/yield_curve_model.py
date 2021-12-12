@@ -24,8 +24,7 @@ class CurveFitPolynomial():
         self._coeffs = []
 
     def _interpolated_yield(self, t):
-        yld = np.polyval(self._coeffs, t)
-        return yld
+        return np.polyval(self._coeffs, t)
 
     def __repr__(self):
         s = label_to_string("OBJECT TYPE", type(self).__name__)
@@ -173,8 +172,7 @@ class CurveFitBSpline():
 
     def _interpolated_yield(self, t):
         t = np.maximum(t, 1e-10)
-        yld = splev(t, self._spline)
-        return yld
+        return splev(t, self._spline)
 
     def __repr__(self):
         s = label_to_string("OBJECT TYPE", type(self).__name__)

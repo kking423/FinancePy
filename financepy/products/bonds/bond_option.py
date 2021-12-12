@@ -108,8 +108,10 @@ class BondOption():
 
         exercise_type = FinExerciseTypes.AMERICAN
 
-        if self._option_type == OptionTypes.EUROPEAN_CALL \
-                or self._option_type == OptionTypes.EUROPEAN_PUT:
+        if self._option_type in [
+            OptionTypes.EUROPEAN_CALL,
+            OptionTypes.EUROPEAN_PUT,
+        ]:
             exercise_type = FinExerciseTypes.EUROPEAN
 
         # This is wasteful if model is Jamshidian but how to do neat design
@@ -118,11 +120,15 @@ class BondOption():
         v = model.bond_option(texp, self._strike_price, self._face_amount,
                               coupon_times, coupon_flows, exercise_type)
 
-        if self._option_type == OptionTypes.EUROPEAN_CALL \
-                or self._option_type == OptionTypes.AMERICAN_CALL:
+        if self._option_type in [
+            OptionTypes.EUROPEAN_CALL,
+            OptionTypes.AMERICAN_CALL,
+        ]:
             return v['call']
-        elif self._option_type == OptionTypes.EUROPEAN_PUT \
-                or self._option_type == OptionTypes.AMERICAN_PUT:
+        elif self._option_type in [
+            OptionTypes.EUROPEAN_PUT,
+            OptionTypes.AMERICAN_PUT,
+        ]:
             return v['put']
         else:
             print(self._option_type)

@@ -55,8 +55,7 @@ class CIR_MC():
 @njit(fastmath=True, cache=True)
 def meanr(r0, a, b, t):
     """ Mean value of a CIR process after time t """
-    mr = r0 * np.exp(-a * t) + b * (1.0 - np.exp(-a * t))
-    return mr
+    return r0 * np.exp(-a * t) + b * (1.0 - np.exp(-a * t))
 
 
 ###############################################################################
@@ -89,8 +88,7 @@ def zero_price(r0, a, b, sigma, t):
     A = (2.0 * h * np.exp((a + h) * t / 2.0) /
          denom) ** (2.0 * a * b / sigma / sigma)
     B = 2.0 * (np.exp(h * t) - 1.0) / denom
-    zcb = A * np.exp(-r0 * B)
-    return zcb
+    return A * np.exp(-r0 * B)
 
 
 ###############################################################################
@@ -115,13 +113,11 @@ def draw(rt, a, b, sigma, dt):
     if d > 1:
         Z = np.random.normal()
         X = np.random.chisquare(d - 1)
-        r = c * (X + (Z + np.sqrt(ll)) ** 2)
+        return c * (X + (Z + np.sqrt(ll)) ** 2)
     else:
         N = np.random.poisson(ll / 2.0)
         X = np.random.chisquare(d + 2 * N)
-        r = c * X
-
-    return r
+        return c * X
 
 
 ###############################################################################
@@ -150,7 +146,7 @@ def rate_path_mc(r0, a, b, sigma, t, dt, seed, scheme):
 
         sigmasqrt_dt = sigma * np.sqrt(dt)
 
-        for iPath in range(0, num_paths):
+        for _ in range(num_paths):
 
             r = r0
             z = np.random.normal(0.0, 1.0, size=(num_steps - 1))
@@ -165,7 +161,7 @@ def rate_path_mc(r0, a, b, sigma, t, dt, seed, scheme):
         x = np.exp(-a * dt)
         y = 1.0 - x
 
-        for iPath in range(0, num_paths):
+        for _ in range(num_paths):
 
             r = r0
             z = np.random.normal(0.0, 1.0, size=(num_steps - 1))
@@ -182,7 +178,7 @@ def rate_path_mc(r0, a, b, sigma, t, dt, seed, scheme):
         sigmasqrt_dt = sigma * np.sqrt(dt)
         sigma2dt = sigma * sigma * dt / 4.0
 
-        for iPath in range(0, num_paths):
+        for _ in range(num_paths):
 
             r = r0
             z = np.random.normal(0.0, 1.0, size=(num_steps - 1))
@@ -198,7 +194,7 @@ def rate_path_mc(r0, a, b, sigma, t, dt, seed, scheme):
         bhat = b - sigma * sigma / 4.0 / a
         sqrt_dt = np.sqrt(dt)
 
-        for iPath in range(0, num_paths):
+        for _ in range(num_paths):
 
             r = r0
             z = np.random.normal(0.0, 1.0, size=(num_steps - 1))
@@ -212,7 +208,7 @@ def rate_path_mc(r0, a, b, sigma, t, dt, seed, scheme):
 
     elif scheme == CIRNumericalScheme.EXACT.value:
 
-        for iPath in range(0, num_paths):
+        for _ in range(num_paths):
 
             r = r0
 
@@ -252,7 +248,7 @@ def zero_price_mc(r0, a, b, sigma, t, dt, num_paths, seed, scheme):
 
         sigmasqrt_dt = sigma * np.sqrt(dt)
 
-        for iPath in range(0, num_paths):
+        for _ in range(num_paths):
 
             r = r0
             rsum = r
@@ -271,7 +267,7 @@ def zero_price_mc(r0, a, b, sigma, t, dt, num_paths, seed, scheme):
         x = np.exp(-a * dt)
         y = 1.0 - x
 
-        for iPath in range(0, num_paths):
+        for _ in range(num_paths):
 
             r = r0
             rsum = r0
@@ -293,7 +289,7 @@ def zero_price_mc(r0, a, b, sigma, t, dt, num_paths, seed, scheme):
         sigmasqrt_dt = sigma * np.sqrt(dt)
         sigma2dt = sigma * sigma * dt / 4.0
 
-        for iPath in range(0, num_paths):
+        for _ in range(num_paths):
 
             r = r0
             rsum = r
@@ -313,7 +309,7 @@ def zero_price_mc(r0, a, b, sigma, t, dt, num_paths, seed, scheme):
         bhat = b - sigma * sigma / 4.0 / a
         sqrt_dt = np.sqrt(dt)
 
-        for iPath in range(0, num_paths):
+        for _ in range(num_paths):
 
             r = r0
             rsum = r
@@ -331,12 +327,12 @@ def zero_price_mc(r0, a, b, sigma, t, dt, num_paths, seed, scheme):
 
     elif scheme == CIRNumericalScheme.EXACT.value:
 
-        for iPath in range(0, num_paths):
+        for _ in range(num_paths):
 
             r = r0
             rsum = r
 
-            for iStep in range(1, num_steps):
+            for _ in range(1, num_steps):
                 r_prev = r
                 r = draw(r, a, b, sigma, dt)
                 rsum += (r + r_prev)

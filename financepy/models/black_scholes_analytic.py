@@ -38,8 +38,7 @@ def bs_value(s, t, k, r, q, v, option_type_value):
     d1 = np.log(ss/kk) / vsqrtT + vsqrtT / 2.0
     d2 = d1 - vsqrtT
 
-    value = phi * ss * n_vect(phi * d1) - phi * kk * n_vect(phi * d2)
-    return value
+    return phi * ss * n_vect(phi * d1) - phi * kk * n_vect(phi * d2)
 
 ###############################################################################
 
@@ -64,8 +63,7 @@ def bs_delta(s, t, k, r, q, v, option_type_value):
     ss = s * np.exp(-q*t)
     kk = k * np.exp(-r*t)
     d1 = np.log(ss/kk) / vsqrtT + vsqrtT / 2.0
-    delta = phi * np.exp(-q*t) * n_vect(phi * d1)
-    return delta
+    return phi * np.exp(-q*t) * n_vect(phi * d1)
 
 ###############################################################################
 
@@ -83,8 +81,7 @@ def bs_gamma(s, t, k, r, q, v, option_type_value):
     ss = s * np.exp(-q*t)
     kk = k * np.exp(-r*t)
     d1 = np.log(ss/kk) / vsqrtT + vsqrtT / 2.0
-    gamma = np.exp(-q*t) * n_prime_vect(d1) / s / vsqrtT
-    return gamma
+    return np.exp(-q*t) * n_prime_vect(d1) / s / vsqrtT
 
 ###############################################################################
 
@@ -103,8 +100,7 @@ def bs_vega(s, t, k, r, q, v, option_type_value):
     ss = s * np.exp(-q*t)
     kk = k * np.exp(-r*t)
     d1 = np.log(ss/kk) / vsqrtT + vsqrtT / 2.0
-    vega = ss * sqrtT * n_prime_vect(d1)
-    return vega
+    return ss * sqrtT * n_prime_vect(d1)
 
 ###############################################################################
 
@@ -161,8 +157,7 @@ def bs_rho(s, t, k, r, q, v, option_type_value):
     kk = k * np.exp(-r*t)
     d1 = np.log(ss/kk) / vsqrtT + vsqrtT / 2.0
     d2 = d1 - vsqrtT
-    rho = phi * k * t * np.exp(-r*t) * n_vect(phi * d2)
-    return rho
+    return phi * k * t * np.exp(-r*t) * n_vect(phi * d2)
 
 ###############################################################################
 
@@ -182,8 +177,7 @@ def bs_vanna(s, t, k, r, q, v, option_type_value):
     kk = k * np.exp(-r*t)
     d1 = np.log(ss/kk) / vsqrtT + vsqrtT / 2.0
     d2 = d1 - vsqrtT
-    vanna = np.exp(-q*t) * sqrtT * n_prime_vect(d1) * (d2/v)
-    return vanna
+    return np.exp(-q*t) * sqrtT * n_prime_vect(d1) * (d2/v)
 
 ###############################################################################
 
@@ -201,8 +195,7 @@ def _f(sigma, args):
     option_type_value = int(args[6])
 
     bsPrice = bs_value(s, t, k, r, q, sigma, option_type_value)
-    obj = bsPrice - price
-    return obj
+    return bsPrice - price
 
 ##############################################################################
 # @njit(fastmath=True, cache=True)
@@ -216,8 +209,7 @@ def _fvega(sigma, args):
     r = args[3]
     q = args[4]
     option_type_value = int(args[6])
-    vega = bs_vega(s, t, k, r, q, sigma, option_type_value)
-    return vega
+    return bs_vega(s, t, k, r, q, sigma, option_type_value)
 
 ###############################################################################
 
@@ -230,12 +222,11 @@ def bs_intrinsic(s, t, k, r, q, option_type_value):
 
     fwd = s * np.exp((r-q)*t)
 
-    if option_type_value == OptionTypes.EUROPEAN_CALL.value:
-        intrinsic_value = np.exp(-r*t) * max(fwd - k, 0.0)
-    else:
-        intrinsic_value = np.exp(-r*t) * max(k - fwd, 0.0)
-
-    return intrinsic_value
+    return (
+        np.exp(-r * t) * max(fwd - k, 0.0)
+        if option_type_value == OptionTypes.EUROPEAN_CALL.value
+        else np.exp(-r * t) * max(k - fwd, 0.0)
+    )
 
 ###############################################################################
 
@@ -293,18 +284,6 @@ def bs_implied_volatility(s, t, k, r, q, price, option_type_value):
     S = s*np.exp(-q*t)
     pi = np.pi
 
-    ###########################################################################
-    # Initial point of inflexion
-    ###########################################################################
-
-    # arg = np.abs(np.log(fwd/k))
-    # sigma0 = np.sqrt(2.0 * arg)
-
-    ###########################################################################
-    # Corrado Miller from Hallerbach equation (7)
-    ###########################################################################
-
-    cmsigma = 0.0
     # arg = (C - 0.5*(S-X))**2 - ((S-X)**2)/ pi
 
     # if arg < 0.0:
@@ -322,12 +301,10 @@ def bs_implied_volatility(s, t, k, r, q, price, option_type_value):
     gamma = 2.0
     arg = (2*C+X-S)**2 - gamma * (S+X)*(S-X)*(S-X) / pi / S
 
-    if arg < 0.0:
-        arg = 0.0
-
+    arg = max(arg, 0.0)
     hsigma = (2 * C + X - S + np.sqrt(arg))
     hsigma = hsigma * np.sqrt(2.0*pi) / 2.0 / (S+X)
-    hsigma = hsigma / np.sqrt(t)
+    hsigma /= np.sqrt(t)
 
     sigma0 = hsigma
 
@@ -341,16 +318,39 @@ def bs_implied_volatility(s, t, k, r, q, price, option_type_value):
 
     if sigma is None:
         sigma = bisection(_f, 1e-4, 10.0, argsv, xtol=tol)
-        if sigma is None:
-            method = "Failed"
-        else:
-            method = "Bisection"
+        method = "Failed" if sigma is None else "Bisection"
     else:
         method = "Newton"
 
     if 1 == 0:
-        print("S: %7.2f K: %7.3f T:%5.3f V:%10.7f Sig0: %7.5f CM: %7.5f HL: %7.5f NW: %7.5f %10s" % (
-            s, k, t, price, sigma0*100.0, cmsigma*100.0, hsigma*100.0, sigma*100.0, method))
+        ###########################################################################
+        # Initial point of inflexion
+        ###########################################################################
+
+        # arg = np.abs(np.log(fwd/k))
+        # sigma0 = np.sqrt(2.0 * arg)
+
+        ###########################################################################
+        # Corrado Miller from Hallerbach equation (7)
+        ###########################################################################
+
+        cmsigma = 0.0
+        print(
+            (
+                "S: %7.2f K: %7.3f T:%5.3f V:%10.7f Sig0: %7.5f CM: %7.5f HL: %7.5f NW: %7.5f %10s"
+                % (
+                    s,
+                    k,
+                    t,
+                    price,
+                    sigma0 * 100.0,
+                    cmsigma * 100.0,
+                    sigma0 * 100.0,
+                    sigma * 100.0,
+                    method,
+                )
+            )
+        )
 
     return sigma
 

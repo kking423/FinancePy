@@ -47,12 +47,12 @@ def lmm_print_forwards(fwds):
     if num_paths > 10:
         return
 
-    for ip in range(0, num_paths):
-        for it in range(0, num_times):
+    for ip in range(num_paths):
+        for it in range(num_times):
 
             print("Path: %3d Time: %3d" % (ip, it), end=""),
 
-            for ifwd in range(0, it):
+            for _ in range(it):
                 print("%8s" % ("-"), end=""),
 
             for ifwd in range(it, numFwds):
@@ -73,16 +73,12 @@ def lmm_swaption_vol_approx(a, b, fwd0, taus, zetas, rho):
     structure (zetas) and the forward-forward correlation matrix rho.. """
 
     num_periods = len(fwd0)
-
 #    if len(taus) != num_periods:
 #        raise FinError("Tau vector must have length" + str(num_periods))
-
 #    if len(zetas) != num_periods:
 #        raise FinError("Tau vector must have length" + str(num_periods))
-
 #    if len(rho) != num_periods:
 #        raise FinError("Rho matrix must have length" + str(num_periods))
-
 #    if len(rho[0]) != num_periods:
 #        raise FinError("Rho matrix must have height" + str(num_periods))
 
@@ -116,22 +112,21 @@ def lmm_swaption_vol_approx(a, b, fwd0, taus, zetas, rho):
             fj = fwd0[j]
             intsigmaij = 0.0
 
-            for k in range(0, a):
+            for k in range(a):
                 intsigmaij += zetas[i] * zetas[j] * taus[k]
 
             term = wti * wtj * fi * fj * rho[i][j] * intsigmaij / (sab**2)
             swaptionVar += term
 
     taua = 0.0
-    for i in range(0, a):
+    for i in range(a):
         taua += taus[i]
 
     taub = 0.0
-    for i in range(0, b):
+    for i in range(b):
         taub += taus[i]
 
-    swaptionVol = np.sqrt(swaptionVar/taua)
-    return swaptionVol
+    return np.sqrt(swaptionVar/taua)
 
 
 ###############################################################################
@@ -155,11 +150,11 @@ def lmm_sim_swaption_vol(a, b, fwd0, fwds, taus):
     fwdSwapRateMean = 0.0
     fwdSwapRateVar = 0.0
 
-    for iPath in range(0, num_paths):  # changed from prange
+    for iPath in range(num_paths):  # changed from prange
 
         numeraire = 1.0
 
-        for k in range(0, a):
+        for k in range(a):
             numeraire *= (1.0 + taus[k] * fwds[iPath, k, k])
 
         pv01 = 0.0
@@ -168,8 +163,8 @@ def lmm_sim_swaption_vol(a, b, fwd0, fwds, taus):
         for k in range(a, b):
             f = fwds[iPath, a, k]
             tau = taus[k]
-            df = df / (1.0 + tau * f)
-            pv01 = pv01 + tau * df
+            df /= 1.0 + tau * f
+            pv01 += tau * df
 
         fwdSwapRate = (1.0 - df) / pv01
 
@@ -177,7 +172,7 @@ def lmm_sim_swaption_vol(a, b, fwd0, fwds, taus):
         fwdSwapRateVar += fwdSwapRate**2
 
     taua = 0.0
-    for i in range(0, a):
+    for i in range(a):
         taua += taus[i]
 
     fwdSwapRateMean /= num_paths
@@ -207,7 +202,7 @@ def lmm_fwd_fwd_correlation(numForwards, num_paths, iTime, fwds):
             sumfwdifwdj = 0.0
             sumfwdjfwdj = 0.0
 
-            for p in range(0, num_paths):  # changed from prange
+            for p in range(num_paths):  # changed from prange
                 dfwdi = fwds[p, iTime, iFwd] - fwds[p, iTime-1, iFwd]
                 dfwdj = fwds[p, iTime, jFwd] - fwds[p, iTime-1, jFwd]
                 sumfwdi += dfwdi
@@ -294,8 +289,7 @@ def sub_matrix(t, N):
 @njit(float64[:, :](float64[:, :]), cache=True, fastmath=True)
 def cholesky_np(rho):
     """ Numba-compliant wrapper around Numpy cholesky function. """
-    chol = np.linalg.cholesky(rho)
-    return chol
+    return np.linalg.cholesky(rho)
 
 ###############################################################################
 
@@ -344,9 +338,9 @@ def lmm_simulate_fwds_nf(numForwards, num_paths, fwd0, zetas, correl, taus, seed
 
     if 1 == 1:
         gMatrix = np.empty((num_paths, numForwards, numForwards))
-        for iPath in range(0, halfNumPaths):
+        for iPath in range(halfNumPaths):
             for j in range(1, numForwards):
-                for k in range(0, numForwards-j):
+                for k in range(numForwards-j):
                     g = np.random.normal()
                     # ANTITHETICS
                     gMatrix[iPath, j, k] = g
@@ -355,10 +349,10 @@ def lmm_simulate_fwds_nf(numForwards, num_paths, fwd0, zetas, correl, taus, seed
     avgg = 0.0
     stdg = 0.0
 
-    for iPath in range(0, num_paths):
+    for iPath in range(num_paths):
 
         # Initial value of forward curve at time 0
-        for iFwd in range(0, numForwards):
+        for iFwd in range(numForwards):
             fwd[iPath, 0, iFwd] = fwd0[iFwd]
 
         for j in range(1, numForwards):  # TIME LOOP
@@ -379,12 +373,12 @@ def lmm_simulate_fwds_nf(numForwards, num_paths, fwd0, zetas, correl, taus, seed
                     muA += zi * fk * tk * zk * rho / (1.0 + fk * tk)
 
                 w = 0.0
-                for k in range(0, numForwards-j):
+                for k in range(numForwards-j):
                     f = factors[j][i-j, k]
-                    w = w + f * gMatrix[iPath, j, k]
+                    w += f * gMatrix[iPath, j, k]
 
                 avgg += w
-                stdg += w*w
+                stdg += w**2
 
                 fwdB[i] = fwd[iPath, j-1, i] \
                     * np.exp(muA * dt - 0.5 * (zi**2) * dt + zi * w * sqrt_dt)
@@ -451,28 +445,28 @@ def lmm_simulate_fwds_1f(numForwards, num_paths, numeraireIndex, fwd0, gammas,
         numDimensions = num_times
         rands = get_uniform_sobol(halfNumPaths, numDimensions)
         gMatrix = np.empty((num_paths, num_times))
-        for iPath in range(0, halfNumPaths):
-            for j in range(0, num_times):
+        for iPath in range(halfNumPaths):
+            for j in range(num_times):
                 u = rands[iPath, j]
                 g = norminvcdf(u)
                 gMatrix[iPath, j] = g
                 gMatrix[iPath + halfNumPaths, j] = -g
     elif useSobol == 0:
         gMatrix = np.empty((num_paths, num_times))
-        for iPath in range(0, halfNumPaths):
-            for j in range(0, num_times):
+        for iPath in range(halfNumPaths):
+            for j in range(num_times):
                 g = np.random.normal()
                 gMatrix[iPath, j] = g
                 gMatrix[iPath + halfNumPaths, j] = -g
     else:
         raise FinError("Use Sobol must be 0 or 1")
 
-    for iPath in range(0, num_paths):  # changed from prange
+    for iPath in range(num_paths):  # changed from prange
         # Initial value of forward curve at time 0
-        for iFwd in range(0, numForwards):
+        for iFwd in range(numForwards):
             fwd[iPath, 0, iFwd] = fwd0[iFwd]
 
-        for j in range(0, numForwards-1):  # TIME LOOP
+        for j in range(numForwards-1):  # TIME LOOP
             dtj = taus[j]
             sqrt_dtj = np.sqrt(dtj)
             w = gMatrix[iPath, j]
@@ -540,7 +534,7 @@ def lmm_simulate_fwds_mf(numForwards, numFactors, num_paths, numeraireIndex, fwd
         gMatrix = np.empty((num_paths, num_times, numFactors))
         for iPath in range(0, halfNumPaths):
             for j in range(0, num_times):
-                for q in range(0, numFactors):
+                for q in range(numFactors):
                     col = j*numFactors + q
                     u = rands[iPath, col]
                     g = norminvcdf(u)
@@ -549,17 +543,17 @@ def lmm_simulate_fwds_mf(numForwards, numFactors, num_paths, numeraireIndex, fwd
     elif useSobol == 0:
         gMatrix = np.empty((num_paths, num_times, numFactors))
         for iPath in range(0, halfNumPaths):
-            for j in range(0, num_times):
-                for q in range(0, numFactors):
+            for j in range(num_times):
+                for q in range(numFactors):
                     g = np.random.normal()
                     gMatrix[iPath, j, q] = g
                     gMatrix[iPath + halfNumPaths, j, q] = -g
     else:
         raise FinError("Use Sobol must be 0 or 1.")
 
-    for iPath in range(0, num_paths):
+    for iPath in range(num_paths):
         # Initial value of forward curve at time 0
-        for iFwd in range(0, numForwards):
+        for iFwd in range(numForwards):
             fwd[iPath, 0, iFwd] = fwd0[iFwd]
 
         for j in range(0, numForwards-1):  # TIME LOOP
@@ -573,18 +567,18 @@ def lmm_simulate_fwds_mf(numForwards, numFactors, num_paths, numeraireIndex, fwd
                     fi = fwd[iPath, j, i]
                     ti = taus[i]
                     zz = 0.0
-                    for q in range(0, numFactors):
+                    for q in range(numFactors):
                         zij = lambdas[q][i-j]
                         zkj = lambdas[q][k-j]
                         zz += zij * zkj
                     muA += fi * ti * zz / (1.0 + fi * ti)
 
                 itoTerm = 0.0
-                for q in range(0, numFactors):
+                for q in range(numFactors):
                     itoTerm += lambdas[q][k-j] * lambdas[q][k-j]
 
                 randomTerm = 0.0
-                for q in range(0, numFactors):
+                for q in range(numFactors):
                     wq = gMatrix[iPath, j, q]
                     randomTerm += lambdas[q][k-j] * wq
                 randomTerm *= sqrt_dtj

@@ -80,7 +80,7 @@ class BondEmbeddedOption:
             if dt > self._maturity_date:
                 raise FinError("Call date after bond maturity date")
 
-        if len(call_dates) > 0:
+        if call_dates:
             dtprev = call_dates[0]
             for dt in call_dates[1:]:
                 if dt <= dtprev:
@@ -92,7 +92,7 @@ class BondEmbeddedOption:
             if dt > self._maturity_date:
                 raise FinError("Put date after bond maturity date")
 
-        if len(put_dates) > 0:
+        if put_dates:
             dtprev = put_dates[0]
             for dt in put_dates[1:]:
                 if dt <= dtprev:
@@ -231,11 +231,11 @@ class BondEmbeddedOption:
         s += label_to_string("FACE AMOUNT", self._face_amount)
 
         s += label_to_string("NUM CALL DATES", len(self._call_dates))
-        for i in range(0, len(self._call_dates)):
+        for i in range(len(self._call_dates)):
             s += "%12s %12.6f\n" % (self._call_dates[i], self._call_prices[i])
 
         s += label_to_string("NUM PUT DATES", len(self._put_dates))
-        for i in range(0, len(self._put_dates)):
+        for i in range(len(self._put_dates)):
             s += "%12s %12.6f\n" % (self._put_dates[i], self._put_prices[i])
 
         return s

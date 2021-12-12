@@ -34,9 +34,7 @@ def _fobj(x, *args):
 
     vE_LHS = (A / E) * N(d1) * vA
     E_LHS = A * N(d1) - L * np.exp(-r * t) * N(d2)
-    obj = (E - E_LHS)**2 + (vE - vE_LHS)**2
-
-    return obj
+    return (E - E_LHS)**2 + (vE - vE_LHS)**2
 
 ###############################################################################
 
@@ -122,35 +120,15 @@ class MertonFirmMkt(MertonFirm):
         self._A = []
         self._vA = []
 
-        for i in range(0, self._nmax):
+        for i in range(self._nmax):
 
             argtuple = ()
 
-            if len(self._E) == self._nmax:
-                argtuple += (self._E[i],)
-            else:
-                argtuple += (self._E[0],)
-
-            if len(self._vE) == self._nmax:
-                argtuple += (self._vE[i],)
-            else:
-                argtuple += (self._vE[0],)
-
-            if len(self._L) == self._nmax:
-                argtuple += (self._L[i],)
-            else:
-                argtuple += (self._L[0],)
-
-            if len(self._t) == self._nmax:
-                argtuple += (self._t[i],)
-            else:
-                argtuple += (self._t[0],)
-
-            if len(self._r) == self._nmax:
-                argtuple += (self._r[i],)
-            else:
-                argtuple += (self._r[0],)
-
+            argtuple += (self._E[i], ) if len(self._E) == self._nmax else (self._E[0], )
+            argtuple += (self._vE[i], ) if len(self._vE) == self._nmax else (self._vE[0], )
+            argtuple += (self._L[i], ) if len(self._L) == self._nmax else (self._L[0], )
+            argtuple += (self._t[i], ) if len(self._t) == self._nmax else (self._t[0], )
+            argtuple += (self._r[i], ) if len(self._r) == self._nmax else (self._r[0], )
             # I initialise asset value and vol to equity value and vol
             x0 = np.array([argtuple[0], argtuple[1]])
 

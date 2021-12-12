@@ -32,8 +32,7 @@ def p_fast(t, T, Rt, delta, pt, ptd, pT, _sigma):
 
     logAhat = term1 - term2
     BhattT = (BtT/BtDelta) * delta
-    p = np.exp(logAhat - BhattT * Rt)
-    return p
+    return np.exp(logAhat - BhattT * Rt)
 
 ###############################################################################
 
@@ -59,8 +58,7 @@ class ModelRatesHoLee:
         pt1 = discount_curve.df(t1)
         pt1p = discount_curve.df(t1 + dt)
         pt2 = discount_curve.df(t2)
-        z = p_fast(t1, t2, rt1, delta, pt1, pt1p, pt2, self._sigma)
-        return z
+        return p_fast(t1, t2, rt1, delta, pt1, pt1p, pt2, self._sigma)
 
 ###############################################################################
 

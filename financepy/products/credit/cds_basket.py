@@ -114,8 +114,8 @@ class CDSBasket:
 
         assetTau = np.zeros(num_credits)
 
-        for iTrial in range(0, num_trials):
-            for iCredit in range(0, num_credits):
+        for iTrial in range(num_trials):
+            for iCredit in range(num_credits):
                 assetTau[iCredit] = default_times[iCredit, iTrial]
 
             # ORDER THE DEFAULT TIMES
@@ -132,7 +132,7 @@ class CDSBasket:
 
                 # DETERMINE IDENTITY OF N-TO-DEFAULT CREDIT IF BASKET NOT HOMO
                 assetIndex = 0
-                for iCredit in range(0, num_credits):
+                for iCredit in range(num_credits):
                     if minTau == default_times[iCredit, iTrial]:
                         assetIndex = iCredit
                         break
@@ -149,8 +149,8 @@ class CDSBasket:
             rpv01 += rpv01Trial
             prot += protTrial
 
-        rpv01 = rpv01 / num_trials
-        prot = prot / num_trials
+        rpv01 /= num_trials
+        prot /= num_trials
         return (rpv01, prot)
 
 ###############################################################################
@@ -270,7 +270,7 @@ class CDSBasket:
 
             t = (payment_dates[iTime] - valuation_date) / gDaysInYear
 
-            for iCredit in range(0, num_credits):
+            for iCredit in range(num_credits):
                 issuer_curve = issuer_curves[iCredit]
                 recovery_rates[iCredit] = issuer_curve._recovery_rate
                 issuerSurvivalProbabilities[iCredit] = interpolate(

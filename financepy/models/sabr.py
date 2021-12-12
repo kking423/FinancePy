@@ -34,9 +34,7 @@ def vol_function_sabr(params, f, k, t):
     rho = params[2]
     nu = params[3]
 
-    if alpha < 1e-10:
-        alpha = 1e-10
-
+    alpha = max(alpha, 1e-10)
     # Negative strikes or forwards
     if k <= 0:
         raise FinError("Strike must be positive")
@@ -58,12 +56,10 @@ def vol_function_sabr(params, f, k, t):
     eps = 1e-07
 
     if abs(z) > eps:
-        vz = alpha * z * (1.0 + (a + b + c) * t) / \
+        return alpha * z * (1.0 + (a + b + c) * t) / \
             (d * (1.0 + v + w) * _x(rho, z))
-        return vz
     else:
-        v0 = alpha * (1.0 + (a + b + c) * t) / (d * (1.0 + v + w))
-        return v0
+        return alpha * (1.0 + (a + b + c) * t) / (d * (1.0 + v + w))
 
 ###############################################################################
 
@@ -87,29 +83,21 @@ def vol_function_sabr_beta_one(params, f, k, t):
 
     m = f / k
 
+    numTerm2 = rho * nu * alpha / 4.0
+    denom = 1.0
+    numTerm1 = 0.0
+    numTerm3 = nu * nu * ((2.0 - 3.0 * (rho**2.0)) / 24.0)
+    num = alpha * (1.0 + (numTerm1 + numTerm2 + numTerm3) * t)
     if abs(m - 1.0) > 1e-6:
 
         sigma = 1.0
-        numTerm1 = 0.0
-        numTerm2 = rho * nu * alpha / 4.0
-        numTerm3 = nu * nu * ((2.0 - 3.0 * (rho**2.0)) / 24.0)
-        num = alpha * (1.0 + (numTerm1 + numTerm2 + numTerm3) * t)
         logM = np.log(m)
         z = nu / alpha * logM
-        denom = 1.0
         x = np.log((np.sqrt(1.0 - 2.0*rho*z + z**2.0) + z - rho)/(1.0 - rho))
-        sigma = num*z/(denom*x)
+        return num*z/(denom*x)
 
     else:
-        # when the option is at the money
-        numTerm1 = 0.0
-        numTerm2 = rho * nu * alpha / 4.0
-        numTerm3 = nu * nu * ((2.0 - 3.0 * (rho**2.0)) / 24.0)
-        num = alpha * (1.0 + (numTerm1 + numTerm2 + numTerm3) * t)
-        denom = 1.0
-        sigma = num / denom
-
-    return sigma
+        return num / denom
 
 ###############################################################################
 
@@ -125,9 +113,7 @@ def vol_function_sabr_beta_half(params, f, k, t):
 
     beta = 0.50
 
-    if alpha < 1e-10:
-        alpha = 1e-10
-
+    alpha = max(alpha, 1e-10)
     # Negative strikes or forwards
     if k <= 0:
         raise FinError("Strike must be positive")
@@ -149,12 +135,10 @@ def vol_function_sabr_beta_half(params, f, k, t):
     eps = 1e-07
 
     if abs(z) > eps:
-        vz = alpha * z * (1.0 + (a + b + c) * t) / \
+        return alpha * z * (1.0 + (a + b + c) * t) / \
             (d * (1.0 + v + w) * _x(rho, z))
-        return vz
     else:
-        v0 = alpha * (1.0 + (a + b + c) * t) / (d * (1.0 + v + w))
-        return v0
+        return alpha * (1.0 + (a + b + c) * t) / (d * (1.0 + v + w))
 
 ###############################################################################
 
@@ -213,8 +197,7 @@ class SABR():
     def black_vol_with_alpha(self, alpha, f, k, t):
 
         self._alpha = alpha[0]
-        blackVol = self.black_vol(f, k, t)
-        return blackVol
+        return self.black_vol(f, k, t)
 
 ###############################################################################
 

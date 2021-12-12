@@ -34,7 +34,7 @@ def _value_mc_nonumba_nonumpy(s, t, K, option_type, r, q, v, num_paths, seed, us
 
     if option_type == OptionTypes.EUROPEAN_CALL.value:
 
-        for i in range(0, num_paths):
+        for i in range(num_paths):
             s_1 = ss * exp(+g[i] * vsqrtt)
             s_2 = ss * exp(-g[i] * vsqrtt)
             payoff += max(s_1 - K, 0.0)
@@ -42,7 +42,7 @@ def _value_mc_nonumba_nonumpy(s, t, K, option_type, r, q, v, num_paths, seed, us
 
     elif option_type == OptionTypes.EUROPEAN_PUT.value:
 
-        for i in range(0, num_paths):
+        for i in range(num_paths):
             s_1 = ss * exp(+g[i] * vsqrtt)
             s_2 = ss * exp(-g[i] * vsqrtt)
             payoff += max(K - s_1, 0.0)
@@ -152,7 +152,7 @@ def _value_mc_numba_only(s, t, K, option_type, r, q, v, num_paths, seed, useSobo
 
     if option_type == OptionTypes.EUROPEAN_CALL.value:
 
-        for i in range(0, num_paths):
+        for i in range(num_paths):
             gg = g[i]
             s_1 = ss * np.exp(+gg * vsqrtt)
             s_2 = ss * np.exp(-gg * vsqrtt)
@@ -161,7 +161,7 @@ def _value_mc_numba_only(s, t, K, option_type, r, q, v, num_paths, seed, useSobo
 
     elif option_type == OptionTypes.EUROPEAN_PUT.value:
 
-        for i in range(0, num_paths):
+        for i in range(num_paths):
             gg = g[i]
             s_1 = ss * np.exp(+gg * vsqrtt)
             s_2 = ss * np.exp(-gg * vsqrtt)
@@ -201,7 +201,7 @@ def _value_mc_numba_parallel(s, t, K, option_type, r, q, v, num_paths, seed, use
 
     if option_type == OptionTypes.EUROPEAN_CALL.value:
 
-        for i in range(0, num_paths):
+        for i in range(num_paths):
             s_1 = ss * exp(+g[i] * vsqrtt)
             s_2 = ss * exp(-g[i] * vsqrtt)
             payoff1 += max(s_1 - K, 0.0)
@@ -209,7 +209,7 @@ def _value_mc_numba_parallel(s, t, K, option_type, r, q, v, num_paths, seed, use
 
     elif option_type == OptionTypes.EUROPEAN_PUT.value:
 
-        for i in range(0, num_paths):
+        for i in range(num_paths):
             s_1 = ss * exp(+g[i] * vsqrtt)
             s_2 = ss * exp(-g[i] * vsqrtt)
             payoff1 += max(K - s_1, 0.0)

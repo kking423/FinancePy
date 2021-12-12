@@ -49,8 +49,7 @@ class BlackScholes(Model):
               dividendRate: float,
               option_type: OptionTypes):
 
-        if option_type == OptionTypes.EUROPEAN_CALL \
-                or option_type == OptionTypes.EUROPEAN_PUT:
+        if option_type in [OptionTypes.EUROPEAN_CALL, OptionTypes.EUROPEAN_PUT]:
 
             if self._implementationType is BlackScholesTypes.DEFAULT:
                 self._implementationType = BlackScholesTypes.ANALYTICAL
@@ -76,8 +75,7 @@ class BlackScholes(Model):
 
                 raise FinError("Implementation not available for this product")
 
-        elif option_type == OptionTypes.AMERICAN_CALL \
-                or option_type == OptionTypes.AMERICAN_PUT:
+        elif option_type in [OptionTypes.AMERICAN_CALL, OptionTypes.AMERICAN_PUT]:
 
             if self._implementationType is BlackScholesTypes.DEFAULT:
                 self._implementationType = BlackScholesTypes.CRR_TREE

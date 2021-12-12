@@ -52,8 +52,7 @@ def f(alpha, nm, Q, P, dX, dt, N):
         rdt = np.exp(x)*dt
         sumQZ += Q[j+N] * np.exp(-rdt)
 
-    obj_fn = sumQZ - P
-    return obj_fn
+    return sumQZ - P
 
 ###############################################################################
 
@@ -68,8 +67,7 @@ def fprime(alpha, nm, Q, P, dX, dt, N):
         rdt = np.exp(x)*dt
         sumQZdZ += Q[j+N] * np.exp(-rdt) * np.exp(x)
 
-    deriv = -sumQZdZ*dt
-    return deriv
+    return -sumQZdZ*dt
 
 ###############################################################################
 # This is the secant method which is not used as I computed the derivative of
@@ -89,7 +87,7 @@ def search_root(x0, nm, Q, P, dX, dt, N):
     f0 = f(x0, nm, Q, P, dX, dt, N)
     f1 = f(x1, nm, Q, P, dX, dt, N)
 
-    for _ in range(0, max_iter):
+    for _ in range(max_iter):
 
         df = f1 - f0
 
@@ -119,7 +117,7 @@ def search_root_deriv(x0, nm, Q, P, dX, dt, N):
     max_iter = 50
     max_error = 1e-8
 
-    for _ in range(0, max_iter):
+    for _ in range(max_iter):
 
         fval = f(x0, nm, Q, P, dX, dt, N)
 
@@ -221,9 +219,9 @@ def bermudan_swaption_tree_fast(texp, tmat,
 
     mapped_times = np.array([0.0])
     mapped_amounts = np.array([0.0])
+    accdAtExpiry = 0.0
     for n in range(1, len(_tree_times)):
 
-        accdAtExpiry = 0.0
         if _tree_times[n-1] < texp and _tree_times[n] >= texp:
             mapped_times = np.append(mapped_times, texp)
             mapped_amounts = np.append(mapped_amounts, accdAtExpiry)
@@ -255,7 +253,7 @@ def bermudan_swaption_tree_fast(texp, tmat,
     rec_values = np.zeros(shape=(num_time_steps, num_nodes))
 
     # Start with the value of the fixed leg at maturity
-    for k in range(0, num_nodes):
+    for k in range(num_nodes):
         flow = 1.0 + fixed_legFlows[maturityStep]
         fixed_leg_values[maturityStep, k] = flow * face_amount
 
@@ -278,21 +276,16 @@ def bermudan_swaption_tree_fast(texp, tmat,
                 vu = fixed_leg_values[m+1, kN]
                 vm = fixed_leg_values[m+1, kN-1]
                 vd = fixed_leg_values[m+1, kN-2]
-                v = (pu*vu + pm*vm + pd*vd) * df
-                fixed_leg_values[m, kN] = v
             elif k == -jmax:
                 vu = fixed_leg_values[m+1, kN+2]
                 vm = fixed_leg_values[m+1, kN+1]
                 vd = fixed_leg_values[m+1, kN]
-                v = (pu*vu + pm*vm + pd*vd) * df
-                fixed_leg_values[m, kN] = v
             else:
                 vu = fixed_leg_values[m+1, kN+1]
                 vm = fixed_leg_values[m+1, kN]
                 vd = fixed_leg_values[m+1, kN-1]
-                v = (pu*vu + pm*vm + pd*vd) * df
-                fixed_leg_values[m, kN] = v
-
+            v = (pu*vu + pm*vm + pd*vd) * df
+            fixed_leg_values[m, kN] = v
             fixed_leg_values[m, kN] += flow
             vpay = 0.0
             vrec = 0.0
@@ -301,36 +294,30 @@ def bermudan_swaption_tree_fast(texp, tmat,
                 vu = pay_values[m+1, kN]
                 vm = pay_values[m+1, kN-1]
                 vd = pay_values[m+1, kN-2]
-                vpay = (pu*vu + pm*vm + pd*vd) * df
             elif k == -jmax:
                 vu = pay_values[m+1, kN+2]
                 vm = pay_values[m+1, kN+1]
                 vd = pay_values[m+1, kN]
-                vpay = (pu*vu + pm*vm + pd*vd) * df
             else:
                 vu = pay_values[m+1, kN+1]
                 vm = pay_values[m+1, kN]
                 vd = pay_values[m+1, kN-1]
-                vpay = (pu*vu + pm*vm + pd*vd) * df
-
+            vpay = (pu*vu + pm*vm + pd*vd) * df
             pay_values[m, kN] = vpay
 
             if k == jmax:
                 vu = rec_values[m+1, kN]
                 vm = rec_values[m+1, kN-1]
                 vd = rec_values[m+1, kN-2]
-                vrec = (pu*vu + pm*vm + pd*vd) * df
             elif k == -jmax:
                 vu = rec_values[m+1, kN+2]
                 vm = rec_values[m+1, kN+1]
                 vd = rec_values[m+1, kN]
-                vrec = (pu*vu + pm*vm + pd*vd) * df
             else:
                 vu = rec_values[m+1, kN+1]
                 vm = rec_values[m+1, kN]
                 vd = rec_values[m+1, kN-1]
-                vrec = (pu*vu + pm*vm + pd*vd) * df
-
+            vrec = (pu*vu + pm*vm + pd*vd) * df
             rec_values[m, kN] = vrec
 
             holdPay = pay_values[m, kN]
@@ -356,11 +343,6 @@ def bermudan_swaption_tree_fast(texp, tmat,
             elif exercise_typeInt == 3 and m > expiryStep:
 
                 raise FinError("American optionality not allowed.")
-
-                # Need to define floating value on all grid dates
-
-                pay_values[m, kN] = max(payExercise, holdPay)
-                rec_values[m, kN] = max(recExercise, holdRec)
 
     return pay_values[0, jmax], rec_values[0, jmax]
 

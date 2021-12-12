@@ -40,7 +40,7 @@ class DiscountCurvePWF(DiscountCurve):
         if len(zero_dates) != len(zero_rates):
             raise FinError("Dates and rates vectors must have same length")
 
-        if len(zero_dates) == 0:
+        if not zero_dates:
             raise FinError("Dates vector must have length > 0")
 
         self._zero_dates = zero_dates
@@ -86,11 +86,7 @@ class DiscountCurvePWF(DiscountCurve):
 
             r0 = self._zero_rates[l_index]
 
-            if found == 1:
-                zero_rate = r0
-            else:
-                zero_rate = self._zero_rates[-1]
-
+            zero_rate = r0 if found == 1 else self._zero_rates[-1]
             zero_rates.append(zero_rate)
 
         return np.array(zero_rates)
@@ -135,13 +131,11 @@ class DiscountCurvePWF(DiscountCurve):
 
         zero_rates = self._zero_rate(dc_times)
 
-        df = self._zero_to_df(self._valuation_date,
+        return self._zero_to_df(self._valuation_date,
                               zero_rates,
                               dc_times,
                               self._freq_type,
                               self._day_count_type)
-
-        return df
 
     ###############################################################################
 
@@ -149,7 +143,7 @@ class DiscountCurvePWF(DiscountCurve):
 
         s = label_to_string("OBJECT TYPE", type(self).__name__)
         s += label_to_string("DATE", "ZERO RATE")
-        for i in range(0, len(self._zero_dates)):
+        for i in range(len(self._zero_dates)):
             s += label_to_string(self._zero_dates[i], self._zero_rates[i])
         s += label_to_string("FREQUENCY", (self._freq_type))
         return s

@@ -47,8 +47,7 @@ class MertonFirm():
     def leverage(self):
         """ Calculate the leverage. """
 
-        lvg = self._A / self._L
-        return lvg
+        return self._A / self._L
 
 ###############################################################################
 
@@ -76,8 +75,7 @@ class MertonFirm():
 
         d1 = np.log(lvg) + (self._r + 0.5 * self._vA ** 2) * self._t
         d1 = d1 / sigmaRootT
-        evol = (self._A / E) * N(d1) * self._vA
-        return evol
+        return (self._A / E) * N(d1) * self._vA
 
 ###############################################################################
 
@@ -89,8 +87,7 @@ class MertonFirm():
         d1 = np.log(lvg) + (self._r + 0.5 * self._vA ** 2) * self._t
         d1 = d1 / sigmaRootT
         d2 = d1 - sigmaRootT
-        evalue = self._A * N(d1) - self._L * np.exp(-self._r * self._t) * N(d2)
-        return evalue
+        return self._A * N(d1) - self._L * np.exp(-self._r * self._t) * N(d2)
 
 ###############################################################################
 
@@ -102,9 +99,8 @@ class MertonFirm():
         d1 = np.log(lvg) + (self._r + 0.5 * self._vA ** 2) * self._t
         d1 = d1 / sigmaRootT
         d2 = d1 - sigmaRootT
-        dvalue = self._A * N(-d1) + self._L * \
+        return self._A * N(-d1) + self._L * \
             np.exp(-self._r * self._t) * N(d2)
-        return dvalue
 
 ###############################################################################
 
@@ -112,8 +108,7 @@ class MertonFirm():
         """ Calculate the credit spread from the debt value. """
 
         dvalue = self.debt_value()
-        spd = -(1.0 / self._t) * np.log(dvalue / self._L) - self._r
-        return spd
+        return -(1.0 / self._t) * np.log(dvalue / self._L) - self._r
 
 ###############################################################################
 
@@ -124,8 +119,7 @@ class MertonFirm():
         lvg = self._A / self._L
         dd = np.log(lvg) + (self._mu - (self._vA**2)/2.0) * self._t
         dd = dd / self._vA / np.sqrt(self._t)
-        pd = 1.0 - N(dd)
-        return pd
+        return 1.0 - N(dd)
 
 ###############################################################################
 

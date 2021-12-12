@@ -72,8 +72,7 @@ def p_fast(t, T, Rt, delta, pt, ptd, pT, _sigma, _a):
 
     logAhat = term1 - term2
     BhattT = (BtT/BtDelta) * delta
-    p = np.exp(logAhat - BhattT * Rt)
-    return p
+    return np.exp(logAhat - BhattT * Rt)
 
 ###############################################################################
 
@@ -125,7 +124,7 @@ def build_tree_fast(a, sigma, tree_times, num_time_steps, discount_factors):
     Q[0, N] = 1.0
 
     # Big loop over time steps
-    for m in range(0, num_time_steps + 1):
+    for m in range(num_time_steps + 1):
 
         nm = min(m, jmax)
         sumQZ = 0.0
@@ -304,7 +303,6 @@ def american_bond_option_tree_fast(texp,
         print("-----------------------------------------")
         print("EXP", _tree_times[m], accrued[m], full_price, clean_price,
               callExercise, putExercise)
-
 #        print(kN, bond_values[expiryStep, kN], "CLEAN", clean_price)
 #        print("EXPIRY DATE", kN, clean_price, accrued[expiryStep], strike_price)
 
@@ -350,18 +348,15 @@ def american_bond_option_tree_fast(texp,
                 vu = call_option_values[m+1, kN]
                 vm = call_option_values[m+1, kN-1]
                 vd = call_option_values[m+1, kN-2]
-                vcall = (pu*vu + pm*vm + pd*vd) * df
             elif k == -jmax:
                 vu = call_option_values[m+1, kN+2]
                 vm = call_option_values[m+1, kN+1]
                 vd = call_option_values[m+1, kN]
-                vcall = (pu*vu + pm*vm + pd*vd) * df
             else:
                 vu = call_option_values[m+1, kN+1]
                 vm = call_option_values[m+1, kN]
                 vd = call_option_values[m+1, kN-1]
-                vcall = (pu*vu + pm*vm + pd*vd) * df
-
+            vcall = (pu*vu + pm*vm + pd*vd) * df
             call_option_values[m, kN] = vcall
 
             if k == jmax:

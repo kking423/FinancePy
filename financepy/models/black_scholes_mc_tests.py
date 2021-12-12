@@ -22,7 +22,7 @@ def value_mc1(s0, t, K, r, q, v, num_paths, seed):
     g = np.random.standard_normal(num_paths)
 
     payoff = 0.0
-    for i in range(0, num_paths):
+    for i in range(num_paths):
         s = ss * exp(+g[i] * vsqrtt)
         payoff += max(s - K, 0.0)
 
@@ -61,7 +61,7 @@ def value_mc3(s0, t, K, r, q, v, num_paths, seed):
     g = np.random.standard_normal(num_paths)
 
     payoff = 0.0
-    for i in range(0, num_paths):
+    for i in range(num_paths):
         s = ss * exp(+g[i] * vsqrtt)
         payoff += max(s - K, 0.0)
 

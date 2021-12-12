@@ -123,7 +123,7 @@ def get_heston_paths(num_paths,
 
     if scheme == FinHestonNumericalScheme.EULER.value:
         # Basic scheme to first order with truncation on variance
-        for iPath in range(0, num_paths):
+        for iPath in range(num_paths):
             s = s0
             v = v0
             for iStep in range(1, num_steps + 1):
@@ -141,7 +141,7 @@ def get_heston_paths(num_paths,
 
     elif scheme == FinHestonNumericalScheme.EULERLOG.value:
         # Basic scheme to first order with truncation on variance
-        for iPath in range(0, num_paths):
+        for iPath in range(num_paths):
             x = log(s0)
             v = v0
             for iStep in range(1, num_steps + 1):
@@ -170,7 +170,7 @@ def get_heston_paths(num_paths,
         c1 = sigma2 * Q * (1.0 - Q) / kappa
         c2 = theta * sigma2 * ((1.0 - Q)**2) / 2.0 / kappa
 
-        for iPath in range(0, num_paths):
+        for iPath in range(num_paths):
             x = log(s0)
             vn = v0
             for iStep in range(1, num_steps + 1):
@@ -191,19 +191,13 @@ def get_heston_paths(num_paths,
                     vnp = a * ((b + zV)**2)
                     d = (1.0 - 2.0 * A * a)
                     M = exp((A * b2 * a) / d) / sqrt(d)
-                    K0 = -log(M) - (K1 + 0.5 * K3) * vn
                 else:
                     p = (psi - 1.0) / (psi + 1.0)
                     beta = (1.0 - p) / m
 
-                    if u <= p:
-                        vnp = 0.0
-                    else:
-                        vnp = log((1.0 - p) / (1.0 - u)) / beta
-
+                    vnp = 0.0 if u <= p else log((1.0 - p) / (1.0 - u)) / beta
                     M = p + beta * (1.0 - p) / (beta - A)
-                    K0 = -log(M) - (K1 + 0.5 * K3) * vn
-
+                K0 = -log(M) - (K1 + 0.5 * K3) * vn
                 x += mu * dt + K0 + (K1 * vn + K2 * vnp) + \
                     sqrt(K3 * vn + K4 * vnp) * zS
                 sPaths[iPath, iStep] = exp(x)
@@ -239,7 +233,7 @@ def get_gbm_paths(num_paths, numAnnSteps, t, mu, stock_price, sigma, scheme, see
         Sall[:, 0] = stock_price
         for it in range(1, num_time_steps + 1):
             g1D = np.random.standard_normal((num_paths))
-            for ip in range(0, num_paths):
+            for ip in range(num_paths):
                 w = np.exp(g1D[ip] * vsqrt_dt)
                 Sall[ip, it] = Sall[ip, it - 1] * m * w
 
@@ -249,7 +243,7 @@ def get_gbm_paths(num_paths, numAnnSteps, t, mu, stock_price, sigma, scheme, see
         Sall[:, 0] = stock_price
         for it in range(1, num_time_steps + 1):
             g1D = np.random.standard_normal((num_paths))
-            for ip in range(0, num_paths):
+            for ip in range(num_paths):
                 w = np.exp(g1D[ip] * vsqrt_dt)
                 Sall[ip, it] = Sall[ip, it - 1] * m * w
                 Sall[ip + num_paths, it] = Sall[ip + num_paths, it - 1] * m / w
@@ -257,7 +251,6 @@ def get_gbm_paths(num_paths, numAnnSteps, t, mu, stock_price, sigma, scheme, see
     else:
 
         raise FinError("Unknown FinGBMNumericalScheme")
-
 #    m = np.mean(Sall[:, -1])
 #    v = np.var(Sall[:, -1]/Sall[:, 0])
 #    print("GBM", num_paths, numAnnSteps, t, mu, stock_price, sigma, scheme, m,v)
@@ -294,7 +287,7 @@ def get_vasicek_paths(num_paths,
     if scheme == FinVasicekNumericalScheme.NORMAL.value:
         rate_path = np.empty((num_paths, num_steps + 1))
         rate_path[:, 0] = r0
-        for iPath in range(0, num_paths):
+        for iPath in range(num_paths):
             r = r0
             z = np.random.normal(0.0, 1.0, size=(num_steps))
             for iStep in range(1, num_steps + 1):
@@ -303,7 +296,7 @@ def get_vasicek_paths(num_paths,
     elif scheme == FinVasicekNumericalScheme.ANTITHETIC.value:
         rate_path = np.empty((2 * num_paths, num_steps + 1))
         rate_path[:, 0] = r0
-        for iPath in range(0, num_paths):
+        for iPath in range(num_paths):
             r1 = r0
             r2 = r0
             z = np.random.normal(0.0, 1.0, size=(num_steps))
@@ -349,7 +342,7 @@ def get_cir_paths(num_paths,
 
     if scheme == CIRNumericalScheme.EULER.value:
         sigmasqrt_dt = sigma * sqrt(dt)
-        for iPath in range(0, num_paths):
+        for iPath in range(num_paths):
             r = r0
             z = np.random.normal(0.0, 1.0, size=(num_steps))
             for iStep in range(1, num_steps + 1):
@@ -362,7 +355,7 @@ def get_cir_paths(num_paths,
     elif scheme == CIRNumericalScheme.LOGNORMAL.value:
         x = exp(-kappa * dt)
         y = 1.0 - x
-        for iPath in range(0, num_paths):
+        for iPath in range(num_paths):
             r = r0
             z = np.random.normal(0.0, 1.0, size=(num_steps))
             for iStep in range(1, num_steps + 1):
@@ -375,7 +368,7 @@ def get_cir_paths(num_paths,
     elif scheme == CIRNumericalScheme.MILSTEIN.value:
         sigmasqrt_dt = sigma * sqrt(dt)
         sigma2dt = sigma * sigma * dt / 4.0
-        for iPath in range(0, num_paths):
+        for iPath in range(num_paths):
             r = r0
             z = np.random.normal(0.0, 1.0, size=(num_steps))
             for iStep in range(1, num_steps + 1):
@@ -388,7 +381,7 @@ def get_cir_paths(num_paths,
     elif scheme == CIRNumericalScheme.KAHLJACKEL.value:
         bhat = theta - sigma * sigma / 4.0 / kappa
         sqrt_dt = sqrt(dt)
-        for iPath in range(0, num_paths):
+        for iPath in range(num_paths):
             r = r0
             z = np.random.normal(0.0, 1.0, size=(num_steps))
             for iStep in range(1, num_steps + 1):

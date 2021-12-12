@@ -34,7 +34,7 @@ def tr_surv_prob_lhp(k1,
 
     p = 0.0
     portfolioEL = 0.0
-    for iCredit in range(0, num_credits):
+    for iCredit in range(num_credits):
         pd = (1.0 - survival_probabilities[iCredit])
         p += pd
         portfolioEL += pd * (1.0 - recovery_rates[iCredit])
@@ -42,14 +42,13 @@ def tr_surv_prob_lhp(k1,
     if p == 0.0:
         return 1.0
 
-    p = p / num_credits
-    portfolioEL = portfolioEL / num_credits
+    p /= num_credits
+    portfolioEL /= num_credits
 
     recovery = 1.0 - portfolioEL / p
     elk1 = exp_min_lk(k1, p, recovery, 1.0, beta)
     elk2 = exp_min_lk(k2, p, recovery, 1.0, beta)
-    value = 1.0 - (elk2 - elk1) / (k2 - k1)
-    return value
+    return 1.0 - (elk2 - elk1) / (k2 - k1)
 
 ###############################################################################
 
@@ -60,11 +59,11 @@ def portfolio_cdf_lhp(k, num_credits, qvector, recovery_rates, beta, num_points)
     p = 0.0
     portfolioEL = 0.0
 
-    for j in range(0, num_credits):
+    for j in range(num_credits):
         p += (1.0 - qvector[j])
         portfolioEL += (1.0 - recovery_rates[j]) * (1 - qvector[j])
 
-    p = p / num_credits
+    p /= num_credits
     portfolioEL /= num_credits
 
     if p == 0:
@@ -111,8 +110,7 @@ def exp_min_lk(k, p, r, n, beta):
     arga = k / (1.0 - r) / n
 
     a = 1.0 / beta * (c - np.sqrt(1.0 - beta * beta) * norminvcdf(arga))
-    el1 = (1.0 - r) * M(c, -a, -beta) + k * N(a)
-    return el1
+    return (1.0 - r) * M(c, -a, -beta) + k * N(a)
 
 ###############################################################################
 
@@ -144,9 +142,7 @@ def lhp_density(k, p, r, beta):
     a = 1.0 / beta * (c - np.sqrt(1.0 - beta * beta) * norminvcdf(arga))
 
     term2 = N(a)
-    rho = -(term2 - term1) / dk
-
-    return rho
+    return -(term2 - term1) / dk
 
 ###############################################################################
 
@@ -177,9 +173,7 @@ def lhp_analytical_density_base_corr(k, p, r, beta, dbeta_dk):
     da_dk = da_dk - np.sqrt(1.0 - beta * beta) / beta / \
         normpdf(norminvcdf(k / (1.0 - r))) / (1.0 - r)
 
-    rho = -normpdf(a) * da_dk
-
-    return rho
+    return -normpdf(a) * da_dk
 ###############################################################################
 
 
@@ -203,9 +197,7 @@ def lhp_analytical_density(k, p, r, beta):
     a = 1.0 / beta * (c - np.sqrt(1.0 - beta * beta) * norminvcdf(arga))
     da_dk = -np.sqrt(1.0 - beta * beta) / beta / \
         normpdf(norminvcdf(k / (1.0 - r))) / (1.0 - r)
-    rho = -normpdf(a) * da_dk
-
-    return rho
+    return -normpdf(a) * da_dk
 
 ###############################################################################
 
@@ -245,7 +237,6 @@ def prob_l_greater_than_k(K, P, R, beta):
     c = normpdf(P)
     arga = K / (1.0 - R)
     a = (1.0 / beta) * (c - np.sqrt(1.0 - beta * beta) * normpdf(arga))
-    prob = 1.0 - N(a)
-    return prob
+    return 1.0 - N(a)
 
 ###############################################################################

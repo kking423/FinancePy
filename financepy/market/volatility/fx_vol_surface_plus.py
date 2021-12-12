@@ -76,8 +76,7 @@ def _g(K, *args):
                            delta_method_value,
                            option_type_value)
 
-    obj_fn = delta_target - delta_out
-    return obj_fn
+    return delta_target - delta_out
 
 ###############################################################################
 
@@ -104,8 +103,7 @@ def _interpolate_gap(k, strikes, gaps):
     k1 = strikes[index]
     v0 = gaps[index-1]
     v1 = gaps[index]
-    v = ((k-k0) * v1 + (k1-k) * v0) / (k1-k0)
-    return v
+    return ((k-k0) * v1 + (k1-k) * v0) / (k1-k0)
 
 ###############################################################################
 # Do not cache this function
@@ -463,21 +461,9 @@ def _solve_to_horizon(s, t, rd, rf,
                       finSolverType,
                       tol):
 
-    ###########################################################################
-    # Determine the price of a market strangle from market strangle
-    # Need to price a call and put that agree with market strangle
-    ###########################################################################
-
-    use10D = True
-    use25D = True
-
-    if ms25DVol == -999.0:
-        use25D = False
-
-    if ms10DVol == -999.0:
-        use10D = False
-
-    if use25D is True:
+    use25D = ms25DVol != -999.0
+    use10D = ms10DVol != -999.0
+    if use25D:
 
         vol_25D_MS = atm_vol + ms25DVol
 
@@ -514,7 +500,7 @@ def _solve_to_horizon(s, t, rd, rf,
 
     ###########################################################################
 
-    if use10D is True:
+    if use10D:
 
         vol_10D_MS = atm_vol + ms10DVol
 
@@ -609,18 +595,16 @@ def _solve_to_horizon(s, t, rd, rf,
         gaps = np.array(xopt)
 
         print("SOLVED")
-
 # Removed this as it causes discontinuity
 #    f = s * np.exp((rd-rf)*t)
 #    interpATMVol = vol_function(vol_type_value, params,
 #                                   strikes, gaps, f, K_ATM, t)
-
 #    diff = atm_vol - interpATMVol
 #    gaps[2] = diff
 
     ###########################################################################
 
-    if use25D is False:
+    if not use25D:
         K_25D_C_MS = K_ATM
         K_25D_P_MS = K_ATM
 
@@ -636,7 +620,7 @@ def _solve_to_horizon(s, t, rd, rf,
                                        delta_method_value, K_25D_P_MS,
                                        params, strikes, gaps)
 
-    if use10D is False:
+    if not use10D:
         K_10D_C_MS = K_ATM
         K_10D_P_MS = K_ATM
 
@@ -664,14 +648,9 @@ def _solve_to_horizon(s, t, rd, rf,
 def vol_function(vol_function_type_value, params, strikes, gaps, f, k, t):
     """ Return the volatility for a strike using a given polynomial
     interpolation following Section 3.9 of Iain Clark book. """
-
 #    print("vol_function", vol_function_type_value)
 
-    if len(strikes) == 1:
-        gapK = 0.0
-    else:
-        gapK = _interpolate_gap(k, strikes, gaps)
-
+    gapK = 0.0 if len(strikes) == 1 else _interpolate_gap(k, strikes, gaps)
     if vol_function_type_value == VolFunctionTypes.CLARK.value:
         vol = vol_function_clark(params, f, k, t) + gapK
         return vol
@@ -721,11 +700,9 @@ def _delta_fit(k, *args):
     delta_out = fast_delta(
         s, t, k, rd, rf, v, deltaTypeValue, option_type_value)
     inverseDeltaOut = norminvcdf(np.abs(delta_out))
-    invObjFn = inverseDeltaTarget - inverseDeltaOut
-
 #    print(k, f, v, delta_out, invObjFn)
 
-    return invObjFn
+    return inverseDeltaTarget - inverseDeltaOut
 
 ###############################################################################
 # Unable to cache this function due to dynamic globals warning. Revisit.
@@ -755,10 +732,8 @@ def _solver_for_smile_strike(s, t, rd, rf,
                 inverseDeltaTarget,
                 parameters, strikes, gaps)
 
-    K = newton_secant(_delta_fit, x0=initialGuess, args=argtuple,
+    return newton_secant(_delta_fit, x0=initialGuess, args=argtuple,
                       tol=1e-8, maxiter=50)
-
-    return K
 
 ###############################################################################
 # Unable to cache function and if I remove njit it complains about pickle
@@ -793,11 +768,7 @@ def solve_for_strike(spot_fx_rate,
         domDF = np.exp(-rd*tdel)
         forDF = np.exp(-rf*tdel)
 
-        if option_type_value == OptionTypes.EUROPEAN_CALL.value:
-            phi = +1.0
-        else:
-            phi = -1.0
-
+        phi = +1.0 if option_type_value == OptionTypes.EUROPEAN_CALL.value else -1.0
         F0T = spot_fx_rate * forDF / domDF
         vsqrtt = volatility * np.sqrt(tdel)
         arg = delta_target*phi/forDF  # CHECK THIS !!!
@@ -810,11 +781,7 @@ def solve_for_strike(spot_fx_rate,
         domDF = np.exp(-rd*tdel)
         forDF = np.exp(-rf*tdel)
 
-        if option_type_value == OptionTypes.EUROPEAN_CALL.value:
-            phi = +1.0
-        else:
-            phi = -1.0
-
+        phi = +1.0 if option_type_value == OptionTypes.EUROPEAN_CALL.value else -1.0
         F0T = spot_fx_rate * forDF / domDF
         vsqrtt = volatility * np.sqrt(tdel)
         arg = delta_target*phi
@@ -822,17 +789,10 @@ def solve_for_strike(spot_fx_rate,
         K = F0T * np.exp(-vsqrtt * (phi * norminvdelta - vsqrtt/2.0))
         return K
 
-    elif delta_method_value == FinFXDeltaMethod.SPOT_DELTA_PREM_ADJ.value:
-
-        argtuple = (spot_fx_rate, tdel, rd, rf, volatility,
-                    delta_method_value, option_type_value, delta_target)
-
-        K = newton_secant(_g, x0=spot_fx_rate, args=argtuple,
-                          tol=1e-7, maxiter=50)
-
-        return K
-
-    elif delta_method_value == FinFXDeltaMethod.FORWARD_DELTA_PREM_ADJ.value:
+    elif delta_method_value in [
+        FinFXDeltaMethod.SPOT_DELTA_PREM_ADJ.value,
+        FinFXDeltaMethod.FORWARD_DELTA_PREM_ADJ.value,
+    ]:
 
         argtuple = (spot_fx_rate, tdel, rd, rf, volatility,
                     delta_method_value, option_type_value, delta_target)
@@ -907,7 +867,7 @@ class FXVolSurfacePlus():
         if len(currency_pair) != 6:
             raise FinError("Currency pair must be 6 characters.")
 
-        self._forName = self._currency_pair[0:3]
+        self._forName = self._currency_pair[:3]
         self._domName = self._currency_pair[3:6]
 
         self._notional_currency = notional_currency
@@ -929,7 +889,7 @@ class FXVolSurfacePlus():
         # Some of these can be missing which is signified by length zero
         n = len(mktStrangle25DeltaVols)
 
-        if n != self._num_vol_curves and n != 0:
+        if n not in [self._num_vol_curves, 0]:
             raise FinError("Number MS25D vols must equal number of tenors")
 
         if n == 0:
@@ -937,7 +897,7 @@ class FXVolSurfacePlus():
 
         n = len(riskReversal25DeltaVols)
 
-        if n != self._num_vol_curves and n != 0:
+        if n not in [self._num_vol_curves, 0]:
             raise FinError("Number RR25D vols must equal number of tenors")
 
         if n == 0:
@@ -945,7 +905,7 @@ class FXVolSurfacePlus():
 
         n = len(mktStrangle10DeltaVols)
 
-        if n != self._num_vol_curves and n != 0:
+        if n not in [self._num_vol_curves, 0]:
             raise FinError("Number MS10D vols must equal number of tenors")
 
         if n == 0:
@@ -953,7 +913,7 @@ class FXVolSurfacePlus():
 
         n = len(riskReversal10DeltaVols)
 
-        if n != self._num_vol_curves and n != 0:
+        if n not in [self._num_vol_curves, 0]:
             raise FinError("Number RR10D vols must equal number of tenors")
 
         if n == 0:
@@ -965,7 +925,7 @@ class FXVolSurfacePlus():
         if self._useMS25DVol != self._useRR25DVol:
             raise FinError("You must provide both 25D RR + 25D MS or neither")
 
-        if self._useMS10DVol is False and self._useMS25DVol is False:
+        if not self._useMS10DVol and self._useMS25DVol is False:
             raise FinError(
                 "No MS and RR. You must provide 10D or 25D MS + RR.")
 
@@ -997,7 +957,7 @@ class FXVolSurfacePlus():
         self._tenorIndex = 0
 
         self._expiry_dates = []
-        for i in range(0, self._num_vol_curves):
+        for i in range(self._num_vol_curves):
             expiry_date = valuation_date.add_tenor(tenors[i])
             self._expiry_dates.append(expiry_date)
 

@@ -59,9 +59,7 @@ class LHPlusModel():
         b = (1.0 / self._beta) * \
             ((c - RtOneMinusBeta2 * invb))
 
-        probLgtK = N(a) + M(c0, b, self._beta0) - M(c0, a, self._beta0)
-
-        return probLgtK
+        return N(a) + M(c0, b, self._beta0) - M(c0, a, self._beta0)
 
 ###############################################################################
 
@@ -75,7 +73,7 @@ class LHPlusModel():
         exp_min_lk = 0.0
         checkSum = 0.0
 
-        for _ in range(0, num_steps):
+        for _ in range(num_steps):
             k0 += dK
             cdf1 = self.prob_loss_gt_k(k0)
             pdf = cdf0 - cdf1
@@ -123,8 +121,7 @@ class LHPlusModel():
             - phi3(a, c, c0, r12, r13, r23)
         el5 = - (1.0 - self._R) * self._H * term1
 
-        elk1k2 = el1 + el2 + el3 + el4 + el5
-        return elk1k2
+        return el1 + el2 + el3 + el4 + el5
 
 ###############################################################################
 
@@ -175,7 +172,6 @@ class LHPlusModel():
         dk = 0.00001
         elK2 = self.exp_min_lk_integral(k2, dk)
         elK1 = self.exp_min_lk_integral(k1, dk)
-        q = 1.0 - (elK2 - elK1) / (k2 - k1)
-        return q
+        return 1.0 - (elK2 - elK1) / (k2 - k1)
 
 ###############################################################################
