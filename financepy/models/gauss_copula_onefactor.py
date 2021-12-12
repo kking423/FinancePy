@@ -42,10 +42,7 @@ def loss_dbn_recursion_gcd(num_credits,
     if len(beta_vector) != num_credits:
         raise FinError("Beta vector length must equal num credits.")
 
-    numLossUnits = 1
-    for i in range(0, len(lossUnits)):
-        numLossUnits += int(lossUnits[i])
-
+    numLossUnits = 1 + sum(int(lossUnits[i]) for i in range(len(lossUnits)))
     uncondLossDbn = np.zeros(numLossUnits)
 
     z = minZ
@@ -54,11 +51,11 @@ def loss_dbn_recursion_gcd(num_credits,
     condDefaultProbs = np.zeros(num_credits)
 
     thresholds = np.zeros(num_credits)
-    for iCredit in range(0, int(num_credits)):
+    for iCredit in range(int(num_credits)):
         thresholds[iCredit] = norminvcdf(default_probs[iCredit])
 
-    for _ in range(0, num_integration_steps):
-        for iCredit in range(0, num_credits):
+    for _ in range(num_integration_steps):
+        for iCredit in range(num_credits):
             beta = beta_vector[iCredit]
             denom = np.sqrt(1.0 - beta * beta)
             argz = (thresholds[iCredit] - beta * z) / denom
@@ -70,12 +67,12 @@ def loss_dbn_recursion_gcd(num_credits,
 
         gaussWt = np.exp(-(z*z)/2.0)
 
-        for iLossUnit in range(0, numLossUnits):
+        for iLossUnit in range(numLossUnits):
             uncondLossDbn[iLossUnit] += indepDbn[iLossUnit] * gaussWt
 
         z += dz
 
-    for iLossUnit in range(0, int(numLossUnits)):
+    for iLossUnit in range(int(numLossUnits)):
         uncondLossDbn[iLossUnit] *= INVROOT2PI * dz
 
     return uncondLossDbn
@@ -103,7 +100,7 @@ def homog_basket_loss_dbn(survival_probabilities,
             raise FinError("Losses are not homogeneous")
 
     m = 0.0
-    for i in range(0, len(beta_vector)):
+    for i in range(len(beta_vector)):
         m += beta_vector[i]
     m /= len(beta_vector)
 
@@ -117,16 +114,14 @@ def homog_basket_loss_dbn(survival_probabilities,
     lossUnits = np.ones(num_credits)
 
     default_probs = np.zeros(num_credits)
-    for iCredit in range(0, num_credits):
+    for iCredit in range(num_credits):
         default_probs[iCredit] = 1.0 - survival_probabilities[iCredit]
 
-    lossDbn = loss_dbn_recursion_gcd(num_credits,
+    return loss_dbn_recursion_gcd(num_credits,
                                      default_probs,
                                      lossUnits,
                                      beta_vector,
                                      num_integration_steps)
-
-    return lossDbn
 
 ###############################################################################
 
@@ -153,7 +148,7 @@ def tranche_surv_prob_recursion(k1,
     commonRecoveryFlag = 1
 
     lossAmounts = np.zeros(num_credits)
-    for iCredit in range(0, num_credits):
+    for iCredit in range(num_credits):
         lossAmounts[iCredit] = (1.0 - recovery_rates[iCredit]) / num_credits
         if lossAmounts[iCredit] != lossAmounts[0]:
             commonRecoveryFlag = 0
@@ -161,28 +156,24 @@ def tranche_surv_prob_recursion(k1,
     gcd = 0.0
 
     m = 0.0
-    for i in range(0, len(beta_vector)):
+    for i in range(len(beta_vector)):
         m += beta_vector[i]
     m /= len(beta_vector)
 
     if m > 0.8:
         num_integration_steps *= 2
 
-    if commonRecoveryFlag == 1:
-        gcd = lossAmounts[0]
-    else:
-        gcd = portfolio_gcd(lossAmounts)
-
+    gcd = lossAmounts[0] if commonRecoveryFlag == 1 else portfolio_gcd(lossAmounts)
     lossUnits = np.zeros(num_credits)
     numLossUnits = 1  # this is the zero loss
 
-    for iCredit in range(0, num_credits):
+    for iCredit in range(num_credits):
         lossUnits[iCredit] = lossAmounts[iCredit] / gcd
-        numLossUnits = numLossUnits + lossUnits[iCredit]
+        numLossUnits += lossUnits[iCredit]
 
     default_probs = np.zeros(num_credits)
 
-    for iCredit in range(0, num_credits):
+    for iCredit in range(num_credits):
         default_probs[iCredit] = 1.0 - survival_probabilities[iCredit]
 
     lossDbn = loss_dbn_recursion_gcd(num_credits,
@@ -192,13 +183,12 @@ def tranche_surv_prob_recursion(k1,
                                      num_integration_steps)
 
     trancheEL = 0.0
-    for iLossUnit in range(0, int(numLossUnits)):
+    for iLossUnit in range(int(numLossUnits)):
         loss = iLossUnit * gcd
         trancheLoss = min(loss, k2) - min(loss, k1)
-        trancheEL = trancheEL + trancheLoss * lossDbn[iLossUnit]
+        trancheEL += trancheLoss * lossDbn[iLossUnit]
 
-    q = 1.0 - trancheEL / (k2 - k1)
-    return q
+    return 1.0 - trancheEL / (k2 - k1)
 
 ###############################################################################
 
@@ -247,7 +237,7 @@ def tranch_surv_prob_gaussian(k1,
         raise FinError("K1 >= K2")
 
     default_probs = [0.0] * num_credits
-    for iCredit in range(0, num_credits):
+    for iCredit in range(num_credits):
         default_probs[iCredit] = 1.0 - survival_probabilities[iCredit]
 
     dz = 2.0 * abs(minZ) / num_integration_steps
@@ -256,19 +246,19 @@ def tranch_surv_prob_gaussian(k1,
     thresholds = np.zeros(num_credits)
     losses = np.zeros(num_credits)
 
-    for iCredit in range(0, num_credits):
+    for iCredit in range(num_credits):
         pd = 1.0 - survival_probabilities[iCredit]
         thresholds[iCredit] = norminvcdf(pd)
         losses[iCredit] = (1.0 - recovery_rates[iCredit]) / num_credits
 
     v = 0.0
-    for _ in range(0, num_integration_steps):
+    for _ in range(num_integration_steps):
 
         mu = 0.0
         var = 0.0
 
         # calculate the mean and variance of the conditional loss distribution
-        for iCredit in range(0, num_credits):
+        for iCredit in range(num_credits):
             beta = beta_vector[iCredit]
             denom = np.sqrt(1.0 - beta * beta)
             argz = (thresholds[iCredit] - beta * z) / denom
@@ -284,8 +274,7 @@ def tranch_surv_prob_gaussian(k1,
         z += dz
 
     v *= INVROOT2PI * dz
-    q = 1.0 - v / (k2 - k1)
-    return q
+    return 1.0 - v / (k2 - k1)
 
 ###############################################################################
 
@@ -307,14 +296,14 @@ def loss_dbn_hetero_adj_binomial(num_credits,
 
     # Determine default threshold for each credit
     thresholds = np.zeros(num_credits)
-    for iCredit in range(0, num_credits):
+    for iCredit in range(num_credits):
         thresholds[iCredit] = norminvcdf(default_probs[iCredit])
 
     dz = 2.0 * abs(minZ) / num_integration_steps
     z = minZ
 
-    for iStep in range(0, num_integration_steps):
-        for iCredit in range(0, num_credits):
+    for _ in range(num_integration_steps):
+        for iCredit in range(num_credits):
             beta = beta_vector[iCredit]
             denom = np.sqrt(1.0 - beta * beta)
             argz = (thresholds[iCredit] - beta * z) / denom
@@ -326,12 +315,12 @@ def loss_dbn_hetero_adj_binomial(num_credits,
 
         gaussWt = np.exp(-(z**2) / 2.0)
 
-        for iLossUnit in range(0, numLossUnits):
+        for iLossUnit in range(numLossUnits):
             uncondLossDbn[iLossUnit] += indepDbn[iLossUnit] * gaussWt
 
         z = z + dz
 
-    for iLossUnit in range(0, numLossUnits):
+    for iLossUnit in range(numLossUnits):
         uncondLossDbn[iLossUnit] *= INVROOT2PI * dz
 
     return uncondLossDbn
@@ -360,18 +349,18 @@ def tranche_surv_prob_adj_binomial(k1,
         raise FinError("K1 >= K2")
 
     default_probs = np.zeros(num_credits)
-    for iCredit in range(0, num_credits):
+    for iCredit in range(num_credits):
         default_probs[iCredit] = 1.0 - survival_probabilities[iCredit]
 
     totalLoss = 0.0
-    for iCredit in range(0, num_credits):
+    for iCredit in range(num_credits):
         totalLoss += (1.0 - recovery_rates[iCredit])
     totalLoss /= num_credits
 
     avgLoss = totalLoss / num_credits
 
     loss_ratio = np.zeros(num_credits)
-    for iCredit in range(0, num_credits):
+    for iCredit in range(num_credits):
         loss_ratio[iCredit] = (
             1.0 - recovery_rates[iCredit]) / num_credits / avgLoss
 
@@ -382,12 +371,11 @@ def tranche_surv_prob_adj_binomial(k1,
                                            num_integration_steps)
     trancheEL = 0.0
     numLossUnits = num_credits + 1
-    for iLossUnit in range(0, numLossUnits):
+    for iLossUnit in range(numLossUnits):
         loss = iLossUnit * avgLoss
         trancheLoss = min(loss, k2) - min(loss, k1)
         trancheEL += trancheLoss * lossDbn[iLossUnit]
 
-    q = 1.0 - trancheEL / (k2 - k1)
-    return q
+    return 1.0 - trancheEL / (k2 - k1)
 
 ###############################################################################

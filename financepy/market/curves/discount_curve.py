@@ -44,7 +44,7 @@ class DiscountCurve:
         check_argument_types(self.__init__, locals())
 
         # Validate curve
-        if len(df_dates) < 1:
+        if not df_dates:
             raise FinError("Times has zero length")
 
         if len(df_dates) != len(df_values):
@@ -57,10 +57,9 @@ class DiscountCurve:
         num_points = len(df_dates)
 
         start_index = 0
-        if num_points > 0:
-            if df_dates[0] == valuation_date:
-                self._dfs[0] = df_values[0]
-                start_index = 1
+        if num_points > 0 and df_dates[0] == valuation_date:
+            self._dfs[0] = df_values[0]
+            start_index = 1
 
         for i in range(start_index, num_points):
             t = (df_dates[i] - valuation_date) / gDaysInYear
@@ -105,10 +104,12 @@ class DiscountCurve:
             df = np.exp(-rates * t)
         elif freq_type == FrequencyTypes.SIMPLE:
             df = 1.0 / (1.0 + rates * t)
-        elif freq_type == FrequencyTypes.ANNUAL or \
-                freq_type == FrequencyTypes.SEMI_ANNUAL or \
-                freq_type == FrequencyTypes.QUARTERLY or \
-                freq_type == FrequencyTypes.MONTHLY:
+        elif freq_type in [
+            FrequencyTypes.ANNUAL,
+            FrequencyTypes.SEMI_ANNUAL,
+            FrequencyTypes.QUARTERLY,
+            FrequencyTypes.MONTHLY,
+        ]:
             df = 1.0 / np.power(1.0 + rates / f, f * t)
         else:
             raise FinError("Unknown Frequency type")
@@ -130,16 +131,8 @@ class DiscountCurve:
 
         f = annual_frequency(freq_type)
 
-        if isinstance(maturityDts, Date):
-            dateList = [maturityDts]
-        else:
-            dateList = maturityDts
-
-        if isinstance(dfs, float):
-            dfList = [dfs]
-        else:
-            dfList = dfs
-
+        dateList = [maturityDts] if isinstance(maturityDts, Date) else maturityDts
+        dfList = [dfs] if isinstance(dfs, float) else dfs
         if len(dateList) != len(dfList):
             raise FinError("Date list and df list do not have same length")
 
@@ -149,7 +142,7 @@ class DiscountCurve:
         times = times_from_dates(
             dateList, self._valuation_date, day_count_type)
 
-        for i in range(0, num_dates):
+        for i in range(num_dates):
 
             df = dfList[i]
 
@@ -202,9 +195,8 @@ class DiscountCurve:
         function can return a vector of cc rates given a vector of
         dates so must use Numpy functions. """
 
-        cc_rates = self.zero_rate(
+        return self.zero_rate(
             dts, FrequencyTypes.CONTINUOUS, day_count_type)
-        return cc_rates
 
     ###############################################################################
 
@@ -223,9 +215,6 @@ class DiscountCurve:
 
         if effective_date < self._valuation_date:
             raise FinError("Swap starts before the curve valuation date.")
-
-        if isinstance(freq_type, FrequencyTypes) is False:
-            raise FinError("Invalid Frequency type.")
 
         if isinstance(freq_type, FrequencyTypes) is False:
             raise FinError("Invalid Frequency type.")
@@ -308,16 +297,14 @@ class DiscountCurve:
                 self._interp_type is InterpTypes.LINEAR_ZERO_RATES or \
                 self._interp_type is InterpTypes.LINEAR_FWD_RATES:
 
-            df = interpolate(t,
+            return interpolate(t,
                              self._times,
                              self._dfs,
                              self._interp_type.value)
 
         else:
 
-            df = self._interpolator.interpolate(t)
-
-        return df
+            return self._interpolator.interpolate(t)
 
     ###############################################################################
 
@@ -328,8 +315,7 @@ class DiscountCurve:
         hazard rate in which case the survival probability is directly
         analogous to a discount factor. """
 
-        q = self.df(dt)
-        return q
+        return self.df(dt)
 
     ###############################################################################
 
@@ -373,8 +359,7 @@ class DiscountCurve:
 
         df1 = self._df(times - dt)
         df2 = self._df(times + dt)
-        fwd = np.log(df1 / df2) / (2.0 * dt)
-        return fwd
+        return np.log(df1 / df2) / (2.0 * dt)
 
     ###############################################################################
 
@@ -388,16 +373,14 @@ class DiscountCurve:
         values = self._dfs.copy()
 
         n = len(self._times)
-        for i in range(0, n):
+        for i in range(n):
             t = times[i]
             values[i] = values[i] * np.exp(-bump_size * t)
 
-        discCurve = DiscountCurve(self._valuation_date,
+        return DiscountCurve(self._valuation_date,
                                   times,
                                   values,
                                   self._interp_type)
-
-        return discCurve
 
     ###############################################################################
 
@@ -411,8 +394,7 @@ class DiscountCurve:
         which is added to the first date. """
 
         if isinstance(start_date, Date):
-            start_dates = []
-            start_dates.append(start_date)
+            start_dates = [start_date]
         elif isinstance(start_date, list):
             start_dates = start_date
         else:
@@ -422,7 +404,7 @@ class DiscountCurve:
 
         num_dates = len(start_dates)
         fwd_rates = []
-        for i in range(0, num_dates):
+        for i in range(num_dates):
             dt1 = start_dates[i]
 
             if isinstance(date_or_tenor, str):
@@ -450,7 +432,7 @@ class DiscountCurve:
         s = label_to_string("OBJECT TYPE", type(self).__name__)
         num_points = len(self._df_dates)
         s += label_to_string("DATES", "DISCOUNT FACTORS")
-        for i in range(0, num_points):
+        for i in range(num_points):
             s += label_to_string("%12s" % self._df_dates[i],
                                  "%12.8f" % self._dfs[i])
 

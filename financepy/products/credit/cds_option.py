@@ -29,8 +29,7 @@ def fvol(volatility, *args):
     issuer_curve = args[2]
     option_value = args[3]
     value = self.value(valuation_date, issuer_curve, volatility)
-    obj_fn = value - option_value
-    return obj_fn
+    return value - option_value
 
 
 ###############################################################################
@@ -154,8 +153,7 @@ class CDSOption:
                            option_value):
         """ Calculate the implied CDS option volatility from a price. """
         arg_tuple = (self, valuation_date, issuer_curve, option_value)
-        sigma = optimize.newton(fvol, x0=0.3, args=arg_tuple, tol=1e-6,
+        return optimize.newton(fvol, x0=0.3, args=arg_tuple, tol=1e-6,
                                 maxiter=50)
-        return sigma
 
 ###############################################################################

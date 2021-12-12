@@ -36,8 +36,7 @@ def _f(dm, *args):
                                  future_ibor,
                                  dm)
 
-    obj_fn = px - full_price
-    return obj_fn
+    return px - full_price
 
 
 ###############################################################################
@@ -163,8 +162,7 @@ class BondFRN:
                                              dm)
 
         accrued = self._accrued_interest
-        principal = full_price * self._face_amount / self._par - accrued
-        return principal
+        return full_price * self._face_amount / self._par - accrued
 
     ###############################################################################
 
@@ -191,8 +189,7 @@ class BondFRN:
                                      future_ibor,
                                      dm)
 
-        durn = (p2 - p0) / dy / 2.0
-        return durn
+        return (p2 - p0) / dy / 2.0
 
     ###############################################################################
 
@@ -222,8 +219,7 @@ class BondFRN:
                                      future_ibor,
                                      dm)
 
-        durn = (p2 - p0) / dy
-        return durn
+        return (p2 - p0) / dy
 
     ###############################################################################
 
@@ -248,8 +244,7 @@ class BondFRN:
                                      future_ibor,
                                      dm)
 
-        md = dd * (1.0 + (next_coupon + dm) / self._frequency) / fp
-        return md
+        return dd * (1.0 + (next_coupon + dm) / self._frequency) / fp
 
     ###############################################################################
 
@@ -277,8 +272,7 @@ class BondFRN:
                                      current_ibor,
                                      future_ibor,
                                      dm)
-        md = dd / fp
-        return md
+        return dd / fp
 
     ###############################################################################
 
@@ -306,8 +300,7 @@ class BondFRN:
                                      current_ibor,
                                      future_ibor,
                                      dm)
-        md = dd / fp
-        return md
+        return dd / fp
 
     ###############################################################################
 
@@ -344,8 +337,7 @@ class BondFRN:
                                      future_ibor,
                                      dm)
 
-        conv = ((p2 + p0) - 2.0 * p1) / dy / dy / p1 / self._par
-        return conv
+        return ((p2 + p0) - 2.0 * p1) / dy / dy / p1 / self._par
 
     ###############################################################################
 
@@ -374,8 +366,7 @@ class BondFRN:
         accrued = self._accrued_interest(settlement_date, next_coupon)
         accrued = accrued * self._par / self._face_amount
 
-        clean_price = full_price - accrued
-        return clean_price
+        return full_price - accrued
 
     ###############################################################################
 
@@ -398,15 +389,13 @@ class BondFRN:
         argtuple = (self, settlement_date, next_coupon, current_ibor,
                     future_ibor, full_price)
 
-        dm = optimize.newton(_f,
+        return optimize.newton(_f,
                              x0=0.01,  # initial value of 10%
                              fprime=None,
                              args=argtuple,
                              tol=1e-12,
                              maxiter=50,
                              fprime2=None)
-
-        return dm
 
     ###############################################################################
 

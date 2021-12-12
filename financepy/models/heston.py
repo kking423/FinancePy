@@ -53,7 +53,7 @@ def get_paths(s0, r, q, v0, kappa, theta, sigma, rho, t, dt, num_paths,
 
     if scheme == HestonNumericalScheme.EULER.value:
         # Basic scheme to first order with truncation on variance
-        for iPath in range(0, num_paths):
+        for iPath in range(num_paths):
             s = s0
             v = v0
             for iStep in range(1, num_steps):
@@ -71,7 +71,7 @@ def get_paths(s0, r, q, v0, kappa, theta, sigma, rho, t, dt, num_paths,
 
     elif scheme == HestonNumericalScheme.EULERLOG.value:
         # Basic scheme to first order with truncation on variance
-        for iPath in range(0, num_paths):
+        for iPath in range(num_paths):
             x = log(s0)
             v = v0
             for iStep in range(1, num_steps):
@@ -100,7 +100,7 @@ def get_paths(s0, r, q, v0, kappa, theta, sigma, rho, t, dt, num_paths,
         c1 = sigma2 * Q * (1.0 - Q) / kappa
         c2 = theta * sigma2 * ((1.0 - Q)**2) / 2.0 / kappa
 
-        for iPath in range(0, num_paths):
+        for iPath in range(num_paths):
             x = log(s0)
             vn = v0
             for iStep in range(1, num_steps):
@@ -121,19 +121,13 @@ def get_paths(s0, r, q, v0, kappa, theta, sigma, rho, t, dt, num_paths,
                     vnp = a * ((b + zV)**2)
                     d = (1.0 - 2.0 * A * a)
                     M = exp((A * b2 * a) / d) / np.sqrt(d)
-                    K0 = -log(M) - (K1 + 0.5 * K3) * vn
                 else:
                     p = (psi - 1.0) / (psi + 1.0)
                     beta = (1.0 - p) / m
 
-                    if u <= p:
-                        vnp = 0.0
-                    else:
-                        vnp = log((1.0 - p) / (1.0 - u)) / beta
-
+                    vnp = 0.0 if u <= p else log((1.0 - p) / (1.0 - u)) / beta
                     M = p + beta * (1.0 - p) / (beta - A)
-                    K0 = -log(M) - (K1 + 0.5 * K3) * vn
-
+                K0 = -log(M) - (K1 + 0.5 * K3) * vn
                 x += mu * dt + K0 + (K1 * vn + K2 * vnp) + \
                     np.sqrt(K3 * vn + K4 * vnp) * zS
                 sPaths[iPath, iStep] = exp(x)
@@ -202,8 +196,7 @@ class Heston():
             raise FinError("Unknown option type.")
 
         payoff = np.mean(path_payoff)
-        v = payoff * exp(-interest_rate * tau)
-        return v
+        return payoff * exp(-interest_rate * tau)
 
 ###############################################################################
 
@@ -239,8 +232,7 @@ class Heston():
             T = T_m * (1.0 - Q) / (1.0 - g * Q)
             W = kappa * theta * (tau * T_m - 2.0 *
                                  np.log((1.0 - g * Q) / (1.0 - g)) / V)
-            phi = np.exp(W + v0 * T)
-            return phi
+            return np.exp(W + v0 * T)
 
         def phi_transform(x):
             def integrand(k): return 2.0 * np.real(np.exp(-1j *

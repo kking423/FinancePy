@@ -92,7 +92,7 @@ class DiscountCurvePoly(DiscountCurve):
         t = np.maximum(times, gSmall)
 
         zero_rate = 0.0
-        for n in range(0, len(self._coefficients)):
+        for n in range(len(self._coefficients)):
             zero_rate += self._coefficients[n] * np.power(t, n)
 
         return zero_rate
@@ -114,14 +114,11 @@ class DiscountCurvePoly(DiscountCurve):
         # We now get the discount factors using these times
         zero_rates = self._zero_rate(dc_times)
 
-        # Now get the discount factors using curve conventions
-        dfs = self._zero_to_df(self._valuation_date,
+        return self._zero_to_df(self._valuation_date,
                                zero_rates,
                                dc_times,
                                self._freq_type,
                                self._day_count_type)
-
-        return dfs
 
     ###############################################################################
 
@@ -130,7 +127,7 @@ class DiscountCurvePoly(DiscountCurve):
 
         s = label_to_string("OBJECT TYPE", type(self).__name__)
         s += label_to_string("POWER", "COEFFICIENT")
-        for i in range(0, len(self._coefficients)):
+        for i in range(len(self._coefficients)):
             s += label_to_string(str(i), self._coefficients[i])
         s += label_to_string("FREQUENCY", self._freq_type)
 

@@ -61,7 +61,7 @@ class CDSIndexPortfolio:
 
         intrinsic_rpv01 = 0.0
 
-        for m in range(0, num_credits):
+        for m in range(num_credits):
             retValue = cds_contract.risky_pv01(valuation_date,
                                                issuer_curves[m])
 
@@ -92,7 +92,7 @@ class CDSIndexPortfolio:
                            0.0,
                            1.0)
 
-        for m in range(0, num_credits):
+        for m in range(num_credits):
             protectionPV = cds_contract.protection_leg_pv(valuation_date,
                                                           issuer_curves[m])
 
@@ -122,9 +122,7 @@ class CDSIndexPortfolio:
                                                maturity_date,
                                                issuer_curves)
 
-        intrinsic_spread = intrinsic_prot_pv / intrinsic_rpv01
-
-        return (intrinsic_spread)
+        return intrinsic_prot_pv / intrinsic_rpv01
 
     ###########################################################################
 
@@ -143,7 +141,7 @@ class CDSIndexPortfolio:
 
         average_spread = 0.0
 
-        for m in range(0, num_credits):
+        for m in range(num_credits):
             spread = cds_contract.par_spread(valuation_date, issuer_curves[m])
             average_spread += spread
 
@@ -168,7 +166,7 @@ class CDSIndexPortfolio:
 
         totalSpread = 0.0
 
-        for m in range(0, num_credits):
+        for m in range(num_credits):
             spread = cds_contract.par_spread(valuation_date, issuer_curves[m])
             totalSpread += spread
 
@@ -281,9 +279,9 @@ class CDSIndexPortfolio:
 
         curveCDSContracts = []
 
-        for j in range(0, numCDSMaturityPoints):
-            cdsCoupon = 1.0
+        cdsCoupon = 1.0
 
+        for j in range(numCDSMaturityPoints):
             cds_contract = CDS(valuation_date,
                                cdsMaturityDates[j],
                                cdsCoupon)
@@ -294,7 +292,7 @@ class CDSIndexPortfolio:
 
         # We calibrate the individual CDS discount to fit each index maturity
         # point
-        for iMaturity in range(0, numIndexMaturityPoints):
+        for iMaturity in range(numIndexMaturityPoints):
 
             alpha = 0.0
             numIterations = 0
@@ -314,13 +312,13 @@ class CDSIndexPortfolio:
                 indexMaturityDate = indexMaturityDates[iMaturity]
                 cdsIndex = CDS(valuation_date, indexMaturityDate, 0.0, 1.0)
 
-                for iCredit in range(0, num_credits):
+                for iCredit in range(num_credits):
 
                     cds_contracts = issuer_curves[iCredit]._cds_contracts
                     recovery_rate = issuer_curves[iCredit]._recovery_rate
                     adjustedCDSContracts = []
 
-                    for j in range(0, numCDSMaturityPoints):
+                    for j in range(numCDSMaturityPoints):
                         cdsSpread = cds_contracts[j]._running_coupon
                         adjustedCDSSpreads[j] = cdsSpread * \
                             cdsSpreadMultipliers[j]
@@ -355,14 +353,14 @@ class CDSIndexPortfolio:
         # use spread multipliers to build and store adjusted discount
         adjustedIssuerCurves = []
 
-        for iCredit in range(0, num_credits):
+        for iCredit in range(num_credits):
 
             recovery_rate = issuer_curves[iCredit]._recovery_rate
 
             adjustedCDSContracts = []
             adjustedSpreads = []
 
-            for j in range(0, numCDSMaturityPoints):
+            for j in range(numCDSMaturityPoints):
                 unadjustedSpread = issuer_curves[iCredit]._cds_contracts[j]._running_coupon
 
                 adjustedSpread = unadjustedSpread * cdsSpreadMultipliers[j]
@@ -418,7 +416,7 @@ class CDSIndexPortfolio:
             adjustedIssuerCurves.append(adjustedIssuerCurve)
 
         # We solve for each maturity point
-        for iMaturity in range(0, numIndexMaturityPoints):
+        for iMaturity in range(numIndexMaturityPoints):
 
             alpha = 1.0
             ratio = 1.0 + 2.0 * tolerance
@@ -434,7 +432,7 @@ class CDSIndexPortfolio:
                 sumRPV01 = 0.0
                 sumProt = 0.0
 
-                for iCredit in range(0, num_credits):
+                for iCredit in range(num_credits):
                     q1 = adjustedIssuerCurves[iCredit]._values[iMaturity]
                     q2 = adjustedIssuerCurves[iCredit]._values[iMaturity + 1]
                     q12 = q2 / q1

@@ -29,9 +29,9 @@ def default_times_gc(issuer_curves,
 
     corrTimes = np.empty(shape=(num_credits, 2 * num_trials))
 
-    for iCredit in range(0, num_credits):
+    for iCredit in range(num_credits):
         issuer_curve = issuer_curves[iCredit]
-        for iTrial in range(0, num_trials):
+        for iTrial in range(num_trials):
             g = y[iCredit, iTrial]
             u1 = 1.0 - N(g)
             u2 = 1.0 - u1

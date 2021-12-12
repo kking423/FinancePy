@@ -163,7 +163,7 @@ class CDSIndexOption:
         h1 = 0.0
         h2 = 0.0
 
-        for iCredit in range(0, num_credits):
+        for iCredit in range(num_credits):
 
             issuer_curve = issuer_curves[iCredit]
             q = issuer_curve.survival_prob(time_to_expiry)
@@ -173,8 +173,8 @@ class CDSIndexOption:
             rpv01 = self._cds_contract.risky_pv01(valuation_date, issuer_curve)
             dh2 = (s - c) * rpv01['clean_rpv01'] / (dfToExpiry * qToExpiry)
 
-            h1 = h1 + dh1
-            h2 = h2 + dh2
+            h1 += dh1
+            h2 += dh2
 
         expH = (h1 + h2) / num_credits
 
@@ -234,7 +234,7 @@ class CDSIndexOption:
             rtb = x2
             dx = x1 - x2
 
-        for _ in range(0, jmax):
+        for _ in range(jmax):
             dx = dx * 0.5
             xmid = rtb + dx
             fmid = self._calc_obj_func(xmid, valuation_date, sigma,
@@ -314,10 +314,10 @@ class CDSIndexOption:
 
         s0 = exp(-0.5 * sigma * sigma * texp)
 
-        for _ in range(0, numZSteps):
+        for _ in range(numZSteps):
             s = x * s0 * exp(sigma * sqrt(texp) * z)
             pdf = exp(-(z**2) / 2.0)
-            z = z + dz
+            z += dz
 
             fwdRPV01 = 0.0
             for iFlow in range(1, num_flows):

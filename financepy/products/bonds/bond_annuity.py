@@ -66,8 +66,7 @@ class BondAnnuity:
         full_price = self.full_price_from_discount_curve(settlement_date,
                                                          discount_curve)
         accrued = self._accrued_interest * self._par / self._face
-        clean_price = full_price - accrued
-        return clean_price
+        return full_price - accrued
 
     ###########################################################################
 
@@ -86,7 +85,7 @@ class BondAnnuity:
             dt = self._flow_dates[i]
             df = discount_curve.df(dt)
             flow = self._flow_amounts[i]
-            pv = pv + flow * df
+            pv += flow * df
 
         return pv * self._par / self._face
 

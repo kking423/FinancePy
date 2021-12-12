@@ -49,7 +49,7 @@ class DiscountCurveZeros(DiscountCurve):
         check_argument_types(self.__init__, locals())
 
         # Validate curve
-        if len(zero_dates) == 0:
+        if not zero_dates:
             raise FinError("Dates has zero length")
 
         if len(zero_dates) != len(zero_rates):
@@ -117,7 +117,7 @@ class DiscountCurveZeros(DiscountCurve):
 
         s += label_to_string("DATES", "ZERO RATES")
         num_points = len(self._times)
-        for i in range(0, num_points):
+        for i in range(num_points):
             s += label_to_string("%12s" % self._zero_dates[i],
                                  "%10.7f" % self._zero_rates[i])
 

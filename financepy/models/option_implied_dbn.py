@@ -38,7 +38,7 @@ def option_implied_dbn(s, t, r, q, strikes, sigmas):
     dK = strikes[1] - strikes[0]
     values = np.zeros(num_steps)
 
-    for ik in range(0, num_steps):
+    for ik in range(num_steps):
         strike = strikes[ik]
         sigma = sigmas[ik]
         v = bs_value(s, t, strike, r, q, sigma,
@@ -50,7 +50,6 @@ def option_implied_dbn(s, t, r, q, strikes, sigmas):
 
     for ik in range(1, num_steps-1):
         d2VdK2 = (values[ik+1] - 2.0 * values[ik] + values[ik-1]) / dK
-
  #       print("%d %12.8f %12.8f %12.8f" %
  #             (ik, strikes[ik], values[ik], d2VdK2))
 

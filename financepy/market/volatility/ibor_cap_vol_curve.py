@@ -127,11 +127,7 @@ class IborCapVolCurve():
         the intercaplet spacing period used when creating the class object.
         The volatility interpolation is piecewise flat. """
 
-        if isinstance(dt, Date):
-            t = (dt - self._curve_date) / gDaysInYear
-        else:
-            t = dt
-
+        t = (dt - self._curve_date) / gDaysInYear if isinstance(dt, Date) else dt
         if t <= self._times[1]:
             return self._capletGammas[1]
 
@@ -157,11 +153,7 @@ class IborCapVolCurve():
         the last caplet/floorlet in the cap/floor. The volatility interpolation
         is piecewise flat. """
 
-        if isinstance(dt, Date):
-            t = (dt - self._curve_date) / gDaysInYear
-        else:
-            t = dt
-
+        t = (dt - self._curve_date) / gDaysInYear if isinstance(dt, Date) else dt
         num_vols = len(self._times)
         vol = self._capSigmas[0]
 
@@ -185,7 +177,7 @@ class IborCapVolCurve():
         s = label_to_string("OBJECT TYPE", type(self).__name__)
         num_times = len(self._times)
         s += " TIME     TAU    CAP VOL    CAPLET VOL"
-        for i in range(0, num_times):
+        for i in range(num_times):
             t = self._times[i]
             tau = self._taus[i]
             volCap = self._capSigmas[i]

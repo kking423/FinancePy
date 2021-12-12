@@ -64,8 +64,7 @@ def _f(y, *args):
     price = args[2]
     convention = args[3]
     px = bond.full_price_from_ytm(settlement_date, y, convention)
-    obj_fn = px - price
-    return obj_fn
+    return px - price
 
 
 ###############################################################################
@@ -78,8 +77,7 @@ def _g(oas, *args):
     price = args[2]
     discount_curve = args[3]
     px = bond.full_price_from_oas(settlement_date, discount_curve, oas)
-    obj_fn = px - price
-    return obj_fn
+    return px - price
 
 
 ###############################################################################
@@ -151,8 +149,8 @@ class Bond:
 
         self._flow_amounts = [0.0]
 
+        cpn = self._coupon / self._frequency
         for _ in self._flow_dates[1:]:
-            cpn = self._coupon / self._frequency
             self._flow_amounts.append(cpn)
 
     ###########################################################################
@@ -178,11 +176,8 @@ class Bond:
         v = 1.0 / (1.0 + ytm / f)
 
         # n is the number of flows after the next coupon
-        n = 0
-        for dt in self._flow_dates:
-            if dt > settlement_date:
-                n += 1
-        n = n - 1
+        n = sum(dt > settlement_date for dt in self._flow_dates)
+        n -= 1
 
         if n < 0:
             raise FinError("No coupons left")
@@ -250,8 +245,7 @@ class Bond:
         dy = 0.0001  # 1 basis point
         p0 = self.full_price_from_ytm(settlement_date, ytm - dy, convention)
         p2 = self.full_price_from_ytm(settlement_date, ytm + dy, convention)
-        durn = -(p2 - p0) / dy / 2.0
-        return durn
+        return -(p2 - p0) / dy / 2.0
 
     ###########################################################################
 
@@ -264,8 +258,7 @@ class Bond:
 
         dd = self.dollar_duration(settlement_date, ytm, convention)
         fp = self.full_price_from_ytm(settlement_date, ytm, convention)
-        md = dd * (1.0 + ytm / self._frequency) / fp
-        return md
+        return dd * (1.0 + ytm / self._frequency) / fp
 
     ###########################################################################
 
@@ -278,8 +271,7 @@ class Bond:
 
         dd = self.dollar_duration(settlement_date, ytm, convention)
         fp = self.full_price_from_ytm(settlement_date, ytm, convention)
-        md = dd / fp
-        return md
+        return dd / fp
 
     ###########################################################################
 
@@ -294,8 +286,7 @@ class Bond:
         p0 = self.full_price_from_ytm(settlement_date, ytm - dy, convention)
         p1 = self.full_price_from_ytm(settlement_date, ytm, convention)
         p2 = self.full_price_from_ytm(settlement_date, ytm + dy, convention)
-        conv = ((p2 + p0) - 2.0 * p1) / dy / dy / p1 / self._par
-        return conv
+        return ((p2 + p0) - 2.0 * p1) / dy / dy / p1 / self._par
 
     ###########################################################################
 
@@ -308,8 +299,7 @@ class Bond:
 
         full_price = self.full_price_from_ytm(settlement_date, ytm, convention)
         accrued_amount = self._accrued_interest * self._par / self._face_amount
-        clean_price = full_price - accrued_amount
-        return clean_price
+        return full_price - accrued_amount
 
     ###########################################################################
 
@@ -325,8 +315,7 @@ class Bond:
                                                          discount_curve)
 
         accrued = self._accrued_interest * self._par / self._face_amount
-        clean_price = full_price - accrued
-        return clean_price
+        return full_price - accrued
 
     ###########################################################################
 
@@ -358,7 +347,7 @@ class Bond:
                 px += pv
 
         px += df * self._redemption
-        px = px / dfSettle
+        px /= dfSettle
 
         return px * self._par
 
@@ -368,8 +357,7 @@ class Bond:
         """ Calculate the current yield of the bond which is the
         coupon divided by the clean price (not the full price)"""
 
-        y = self._coupon * self._par / clean_price
-        return y
+        return self._coupon * self._par / clean_price
 
     ###########################################################################
 
@@ -507,11 +495,10 @@ class Bond:
         for dt in schedule._adjusted_dates[1:]:
             df = discount_curve.df(dt)
             year_frac = day_count.year_frac(prev_date, dt)[0]
-            pv01 = pv01 + year_frac * df
+            pv01 += year_frac * df
             prev_date = dt
 
-        asw = (pvIbor - bondPrice / self._par) / pv01
-        return asw
+        return (pvIbor - bondPrice / self._par) / pv01
 
     ###########################################################################
 
@@ -540,9 +527,9 @@ class Bond:
                 r = f * (np.power(df, -1.0 / t / f) - 1.0)
                 # determine the OAS adjusted zero rate
                 df_adjusted = np.power(1.0 + (r + oas) / f, -t * f)
-                pv = pv + (c / f) * df_adjusted
+                pv += (c / f) * df_adjusted
 
-        pv = pv + df_adjusted * self._redemption
+        pv += df_adjusted * self._redemption
         pv *= self._par
         return pv
 
@@ -641,7 +628,7 @@ class Bond:
                 # Any default results in all subsequent coupons being lost
                 # with zero recovery
 
-                pv = pv + (c / f) * df * q
+                pv += (c / f) * df * q
                 dq = q - prevQ
 
                 defaultingPrincipalPVPayStart += -dq * recovery_rate * prevDf
@@ -651,9 +638,9 @@ class Bond:
                 prevQ = q
                 prevDf = df
 
-        pv = pv + 0.50 * defaultingPrincipalPVPayStart
-        pv = pv + 0.50 * defaultingPrincipalPVPayEnd
-        pv = pv + df * q * self._redemption
+        pv += 0.50 * defaultingPrincipalPVPayStart
+        pv += 0.50 * defaultingPrincipalPVPayEnd
+        pv += df * q * self._redemption
         pv *= self._par
         return pv
 
@@ -675,8 +662,7 @@ class Bond:
                                                          survival_curve,
                                                          recovery_rate)
 
-        clean_price = full_price - self._accrued_interest
-        return clean_price
+        return full_price - self._accrued_interest
 
     ###########################################################################
 

@@ -127,8 +127,7 @@ class Black():
         [d1, d2] = calculate_d1_d2(f, t, k, v)
 
         sqrtT = np.sqrt(t)
-        gamma = df * n_prime_vect(d1) / (f * v * sqrtT)
-        return gamma
+        return df * n_prime_vect(d1) / (f * v * sqrtT)
 
 ###############################################################################
 
@@ -181,9 +180,7 @@ class Black():
 
         [d1, d2] = calculate_d1_d2(f, t, k, v)
 
-        if call_or_put == OptionTypes.EUROPEAN_CALL:
-            vega = df * f * sqrtT * n_prime_vect(d1)
-        elif call_or_put == OptionTypes.EUROPEAN_PUT:
+        if call_or_put in [OptionTypes.EUROPEAN_CALL, OptionTypes.EUROPEAN_PUT]:
             vega = df * f * sqrtT * n_prime_vect(d1)
         else:
             raise FinError("Option type must be a European Call or Put")

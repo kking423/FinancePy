@@ -21,9 +21,9 @@ def indep_loss_dbn_heterogeneous_adj_binomial(num_credits,
     indepDbn = np.zeros(numLosses)
 
     p = 0.0
-    for iCredit in range(0, num_credits):
+    for iCredit in range(num_credits):
         p += loss_ratio[iCredit] * condProbs[iCredit]
-    p = p / num_credits
+    p /= num_credits
 
     ###########################################################################
 
@@ -44,7 +44,7 @@ def indep_loss_dbn_heterogeneous_adj_binomial(num_credits,
     vapprox = 0.0
     vexact = 0.0
 
-    for iCredit in range(0, num_credits):
+    for iCredit in range(num_credits):
         loss_ratio2 = loss_ratio[iCredit] ** 2
         vapprox += loss_ratio2 * p * (1.0 - p)
         vexact += loss_ratio2 * condProbs[iCredit] * (1.0 - condProbs[iCredit])
@@ -74,7 +74,7 @@ def indep_loss_dbn_heterogeneous_adj_binomial(num_credits,
     epsilonBelow = (1.0 - alpha) * diffAbove
     epsilonAbove = (1.0 - alpha) - epsilonBelow
 
-    for iLossUnit in range(0, numLosses):
+    for iLossUnit in range(numLosses):
         indepDbn[iLossUnit] *= alpha
 
     indepDbn[int(meanBelow)] += epsilonBelow
@@ -97,8 +97,7 @@ def portfolio_gcd(actualLosses):
         num2 = int(actualLosses[iCredit] * scaling)
         temp = pair_gcd(temp, num2)
 
-    portfolioGCD = float(temp / scaling)
-    return portfolioGCD
+    return float(temp / scaling)
 
 ###############################################################################
 
@@ -108,29 +107,26 @@ def indep_loss_dbn_recursion_gcd(num_credits,
                                  condDefaultProbs,
                                  lossUnits):
 
-    numLossUnits = 1
-    for i in range(0, len(lossUnits)):
-        numLossUnits += int(lossUnits[i])
-
+    numLossUnits = 1 + sum(int(lossUnits[i]) for i in range(len(lossUnits)))
     prevDbn = np.zeros(numLossUnits)
     prevDbn[0] = 1.0
 
     small = 1e-10
     nextDbn = np.zeros(numLossUnits)
 
-    for iCredit in range(0, num_credits):
+    for iCredit in range(num_credits):
 
         p = condDefaultProbs[iCredit]
         loss = (int)(lossUnits[iCredit] + small)
 
-        for iLossUnit in range(0, loss):
+        for iLossUnit in range(loss):
             nextDbn[iLossUnit] = prevDbn[iLossUnit] * (1.0 - p)
 
         for iLossUnit in range(loss, numLossUnits):
             nextDbn[iLossUnit] = prevDbn[iLossUnit - loss] * \
                 p + prevDbn[iLossUnit] * (1.0 - p)
 
-        for iLossUnit in range(0, numLossUnits):
+        for iLossUnit in range(numLossUnits):
             prevDbn[iLossUnit] = nextDbn[iLossUnit]
 
     return nextDbn

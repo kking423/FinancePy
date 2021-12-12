@@ -28,10 +28,7 @@ def f(q, *args):
     cds = args[2]
     num_points = len(self._times)
     self._values[num_points - 1] = q
-    # This is important - we calibrate a curve that makes the clean PV of the
-    # CDS equal to zero and so we select the second element of the value tuple
-    obj_fn = cds.value(valuation_date, self)['clean_pv']
-    return obj_fn
+    return cds.value(valuation_date, self)['clean_pv']
 
 ###############################################################################
 
@@ -68,11 +65,8 @@ class CDSCurve:
         self._times = []
         self._values = []
 
-        if len(self._cds_contracts) > 0:
+        if self._cds_contracts:
             self._build_curve()
-        else:
-            pass  # In some cases we allow None to be passed
-
         return
 
 ###############################################################################
@@ -110,18 +104,17 @@ class CDSCurve:
         if isinstance(t, np.ndarray):
             n = len(t)
             qs = np.zeros(n)
-            for i in range(0, n):
+            for i in range(n):
                 qs[i] = _uinterpolate(t[i],
                                       self._times,
                                       self._values,
                                       self._interpolation_method.value)
             return qs
         elif isinstance(t, float):
-            q = _uinterpolate(t,
+            return _uinterpolate(t,
                               self._times,
                               self._values,
                               self._interpolation_method.value)
-            return q
         else:
             raise FinError("Unknown time type")
 
@@ -152,7 +145,7 @@ class CDSCurve:
         self._times = np.array([0.0])
         self._values = np.array([1.0])
 
-        for i in range(0, num_times):
+        for i in range(num_times):
 
             maturity_date = self._cds_contracts[i]._maturity_date
 
@@ -176,8 +169,7 @@ class CDSCurve:
         epsilon = 1e-8
         df1 = self.df(t) * self.survival_prob(t)
         df2 = self.df(t+epsilon) * self.survival_prob(t+epsilon)
-        fwd = np.log(df1/df2)/dt
-        return fwd
+        return np.log(df1/df2)/dt
 
 ###############################################################################
 
@@ -195,8 +187,7 @@ class CDSCurve:
         year_frac = day_count.year_frac(date1, date2)[0]
         df1 = self.df(date1)
         df2 = self.df(date2)
-        fwd = (df1 / df2 - 1.0) / year_frac
-        return fwd
+        return (df1 / df2 - 1.0) / year_frac
 
 ##############################################################################
 
@@ -214,10 +205,7 @@ class CDSCurve:
 
         if f == 0:  # Simple interest
             zero_rate = (1.0/dfq-1.0)/t
-        if f == -1:  # Continuous
-            zero_rate = -np.log(dfq) / t
-        else:
-            zero_rate = (dfq**(-1.0/t) - 1) * f
+        zero_rate = -np.log(dfq) / t if f == -1 else (dfq**(-1.0/t) - 1) * f
         return zero_rate
 
 ##############################################################################

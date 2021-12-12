@@ -40,9 +40,7 @@ def vol_function_shifted_sabr(params, f, k, t):
     f = f + shift
     k = k + shift
 
-    if alpha < 1e-10:
-        alpha = 1e-10
-
+    alpha = max(alpha, 1e-10)
     # Negative strikes or forwards
     if k <= 0:
         raise FinError("Strike must be positive")
@@ -64,12 +62,10 @@ def vol_function_shifted_sabr(params, f, k, t):
     eps = 1e-07
 
     if abs(z) > eps:
-        vz = alpha * z * (1.0 + (a + b + c) * t) / \
+        return alpha * z * (1.0 + (a + b + c) * t) / \
             (d * (1.0 + v + w) * _x(rho, z))
-        return vz
     else:
-        v0 = alpha * (1.0 + (a + b + c) * t) / (d * (1.0 + v + w))
-        return v0
+        return alpha * (1.0 + (a + b + c) * t) / (d * (1.0 + v + w))
 
 ###############################################################################
 
@@ -129,8 +125,7 @@ class SABRShifted():
     def black_vol_with_alpha(self, alpha, f, k, t):
 
         self._alpha = alpha[0]
-        blackVol = self.black_vol(f, k, t)
-        return blackVol
+        return self.black_vol(f, k, t)
 
 ###############################################################################
 

@@ -101,7 +101,7 @@ class BondMortgage:
         else:
             raise FinError("Unknown Mortgage type.")
 
-        for i in range(1, num_flows):
+        for _ in range(1, num_flows):
             interestFlow = principal * zero_rate / frequency
             principalFlow = monthly_flow - interestFlow
             principal = principal - principalFlow
@@ -128,7 +128,7 @@ class BondMortgage:
                "OUTSTANDING", "TOTAL"))
 
         print("")
-        for i in range(0, num_flows):
+        for i in range(num_flows):
             print("%15s %12.2f %12.2f %12.2f %12.2f" %
                   (self._schedule._adjusted_dates[i],
                    self._interest_flows[i],
